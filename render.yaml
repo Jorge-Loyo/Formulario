@@ -1,0 +1,33 @@
+# Despliegue del backend FastAPI en Render.
+# Crear el servicio desde el dashboard de Render apuntando a este repo, o usar Blueprints.
+services:
+  - type: web
+    name: formulario-concurso-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # La cadena de conexión de Neon. Cargar como secreto en Render.
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: CONCURSOS_USER
+        sync: false
+      - key: CONCURSOS_PASS
+        sync: false
+      # URL del frontend en Vercel (para CORS). Ej: https://tu-app.vercel.app
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.7"
