@@ -29,6 +29,7 @@ export const SEXOS = [
   { value: "M", label: "Masculino" },
   { value: "F", label: "Femenino" },
   { value: "NB", label: "NB" },
+  { value: "NS", label: "Prefiero no decirlo" },
 ];
 
 export const TIPOS_DOCUMENTO = ["DNI", "LC", "LE", "Pasaporte", "CI"];

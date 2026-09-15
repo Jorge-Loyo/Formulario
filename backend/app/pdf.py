@@ -33,6 +33,13 @@ def _styles():
     return styles
 
 
+SEXO_LABELS = {"M": "Masculino", "F": "Femenino", "NB": "NB", "NS": "Prefiero no decirlo"}
+
+
+def _label_sexo(valor):
+    return SEXO_LABELS.get(valor, valor or "-")
+
+
 def _seccion(titulo, filas, styles):
     """Construye una tabla de 4 columnas (etiqueta/valor, etiqueta/valor)."""
     data = []
@@ -156,7 +163,7 @@ def generar_pdf_postulante(p: Postulante) -> bytes:
     elems.append(_seccion("Datos personales", [
         ("Apellido", p.apellido), ("Nombre", p.nombre),
         ("DNI", p.dni), ("CUIL", p.cuil),
-        ("Sexo", p.sexo), ("Fecha de nacimiento", f"{p.fecha_nacimiento:%d/%m/%Y}"),
+        ("Sexo", _label_sexo(p.sexo)), ("Fecha de nacimiento", f"{p.fecha_nacimiento:%d/%m/%Y}"),
         ("Nacionalidad", p.nacionalidad), ("", ""),
     ], styles))
 

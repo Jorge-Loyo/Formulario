@@ -10,7 +10,7 @@ class PostulanteBase(BaseModel):
     nombre: str = Field(min_length=1, max_length=120)
     dni: str = Field(min_length=1, max_length=20)
     cuil: str = Field(min_length=1, max_length=20)
-    sexo: str = Field(pattern="^(M|F|NB)$")
+    sexo: str = Field(pattern="^(M|F|NB|NS)$")
     fecha_nacimiento: date
     nacionalidad: str = Field(min_length=1, max_length=80)
 
