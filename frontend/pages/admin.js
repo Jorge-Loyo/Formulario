@@ -18,7 +18,10 @@ export default function Admin() {
 
   // Restaurar sesión guardada
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null;
+    const saved =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(STORAGE_KEY)
+        : null;
     if (saved) setAuth(saved);
   }, []);
 
@@ -114,19 +117,34 @@ export default function Admin() {
           <h1>Panel de administración</h1>
           <p>Acceso restringido — Gestión de postulaciones</p>
         </div>
-        <section className="card-form" style={{ maxWidth: 440, margin: "0 auto" }}>
+        <section
+          className="card-form"
+          style={{ maxWidth: 440, margin: "0 auto" }}
+        >
           <h2 className="section-title">Ingresar</h2>
           {loginError && <div className="alert alert-danger">{loginError}</div>}
           <form onSubmit={onLogin}>
             <div className="mb-3">
               <label className="form-label">Usuario</label>
-              <input className="form-control" value={usuario} onChange={(e) => setUsuario(e.target.value)} autoFocus />
+              <input
+                className="form-control"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoFocus
+              />
             </div>
             <div className="mb-3">
               <label className="form-label">Contraseña</label>
-              <input type="password" className="form-control" value={clave} onChange={(e) => setClave(e.target.value)} />
+              <input
+                type="password"
+                className="form-control"
+                value={clave}
+                onChange={(e) => setClave(e.target.value)}
+              />
             </div>
-            <button className="btn btn-primary w-100" type="submit">Ingresar</button>
+            <button className="btn btn-primary w-100" type="submit">
+              Ingresar
+            </button>
           </form>
         </section>
       </>
@@ -154,14 +172,27 @@ export default function Admin() {
       <section className="card-form">
         <form onSubmit={onBuscar} className="row g-2 mb-3">
           <div className="col">
-            <input className="form-control" placeholder="Buscar por apellido, nombre, DNI, CUIL o email"
-              value={q} onChange={(e) => setQ(e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Buscar por apellido, nombre, DNI, CUIL o email"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
           </div>
           <div className="col-auto">
-            <button className="btn btn-primary" type="submit">Buscar</button>
+            <button className="btn btn-primary" type="submit">
+              Buscar
+            </button>
           </div>
           <div className="col-auto">
-            <button className="btn btn-outline-secondary" type="button" onClick={() => { setQ(""); cargar("", auth); }}>
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              onClick={() => {
+                setQ("");
+                cargar("", auth);
+              }}
+            >
               Limpiar
             </button>
           </div>
@@ -169,7 +200,10 @@ export default function Admin() {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        <table className="table table-hover align-middle" style={{ tableLayout: "auto", width: "100%" }}>
+        <table
+          className="table table-hover align-middle"
+          style={{ tableLayout: "auto", width: "100%" }}
+        >
           <thead>
             <tr>
               <th>N°</th>
@@ -183,23 +217,39 @@ export default function Admin() {
           </thead>
           <tbody>
             {cargando ? (
-              <tr><td colSpan={7} className="text-center py-4">Cargando...</td></tr>
+              <tr>
+                <td colSpan={7} className="text-center py-4">
+                  Cargando...
+                </td>
+              </tr>
             ) : postulantes.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-4 text-muted">Sin resultados.</td></tr>
+              <tr>
+                <td colSpan={7} className="text-center py-4 text-muted">
+                  Sin resultados.
+                </td>
+              </tr>
             ) : (
               paginados.map((p) => (
                 <tr key={p.id}>
                   <td>{p.id}</td>
-                  <td>{p.apellido}, {p.nombre}</td>
+                  <td>
+                    {p.apellido}, {p.nombre}
+                  </td>
                   <td>{p.dni}</td>
                   <td>{p.cuil}</td>
                   <td style={{ wordBreak: "break-all" }}>{p.email}</td>
                   <td>{new Date(p.creado_en).toLocaleDateString("es-AR")}</td>
                   <td className="text-end table-actions">
-                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => ver(p.id)}>
+                    <button
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => ver(p.id)}
+                    >
                       <i className="bx bx-show" /> Ver
                     </button>
-                    <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => imprimir(p.id)}
+                    >
                       <i className="bx bx-printer" /> Imprimir
                     </button>
                   </td>
@@ -212,23 +262,45 @@ export default function Admin() {
         {postulantes.length > 0 && (
           <div className="d-flex justify-content-between align-items-center flex-wrap mt-3">
             <span className="form-hint">
-              Mostrando {inicio + 1}–{Math.min(inicio + POR_PAGINA, postulantes.length)} de {postulantes.length}
+              Mostrando {inicio + 1}–
+              {Math.min(inicio + POR_PAGINA, postulantes.length)} de{" "}
+              {postulantes.length}
             </span>
             {totalPaginas > 1 && (
               <nav>
                 <ul className="pagination mb-0">
-                  <li className={`page-item ${paginaActual === 1 ? "disabled" : ""}`}>
-                    <button className="page-link" onClick={() => setPagina(paginaActual - 1)}>
+                  <li
+                    className={`page-item ${paginaActual === 1 ? "disabled" : ""}`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setPagina(paginaActual - 1)}
+                    >
                       Anterior
                     </button>
                   </li>
-                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
-                    <li key={n} className={`page-item ${n === paginaActual ? "active" : ""}`}>
-                      <button className="page-link" onClick={() => setPagina(n)}>{n}</button>
-                    </li>
-                  ))}
-                  <li className={`page-item ${paginaActual === totalPaginas ? "disabled" : ""}`}>
-                    <button className="page-link" onClick={() => setPagina(paginaActual + 1)}>
+                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(
+                    (n) => (
+                      <li
+                        key={n}
+                        className={`page-item ${n === paginaActual ? "active" : ""}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => setPagina(n)}
+                        >
+                          {n}
+                        </button>
+                      </li>
+                    ),
+                  )}
+                  <li
+                    className={`page-item ${paginaActual === totalPaginas ? "disabled" : ""}`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() => setPagina(paginaActual + 1)}
+                    >
                       Siguiente
                     </button>
                   </li>
@@ -237,8 +309,6 @@ export default function Admin() {
             )}
           </div>
         )}
-
-        <p className="form-hint mt-2">API: {API_URL}</p>
       </section>
     </>
   );
