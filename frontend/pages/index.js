@@ -218,17 +218,26 @@ export default function FormularioInscripcion() {
             <div className="col-md-4 mb-3">
               <Label>Teléfono celular</Label>
               <input className={`form-control ${invalido("telefono_celular") ? "is-invalid" : ""}`}
-                value={form.telefono_celular} onChange={(e) => set("telefono_celular", e.target.value)} />
+                inputMode="numeric" maxLength={20}
+                value={form.telefono_celular}
+                onChange={(e) => set("telefono_celular", e.target.value.replace(/\D/g, ""))} />
+              <span className="form-hint">Solo números.</span>
             </div>
             <div className="col-md-4 mb-3">
               <label className="form-label">Teléfono particular</label>
               <input className="form-control"
-                value={form.telefono_particular} onChange={(e) => set("telefono_particular", e.target.value)} />
+                inputMode="numeric" maxLength={20}
+                value={form.telefono_particular}
+                onChange={(e) => set("telefono_particular", e.target.value.replace(/\D/g, ""))} />
+              <span className="form-hint">Solo números.</span>
             </div>
             <div className="col-md-4 mb-3">
               <label className="form-label">Teléfono alternativo</label>
               <input className="form-control"
-                value={form.telefono_alternativo} onChange={(e) => set("telefono_alternativo", e.target.value)} />
+                inputMode="numeric" maxLength={20}
+                value={form.telefono_alternativo}
+                onChange={(e) => set("telefono_alternativo", e.target.value.replace(/\D/g, ""))} />
+              <span className="form-hint">Solo números.</span>
             </div>
             <div className="col-md-6 mb-3">
               <Label>Email</Label>
