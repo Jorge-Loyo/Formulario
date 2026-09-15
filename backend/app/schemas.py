@@ -23,7 +23,7 @@ class PostulanteBase(BaseModel):
     # Domicilio real
     real_calle: str = Field(min_length=1, max_length=160)
     real_numero: str = Field(min_length=1, max_length=20)
-    real_piso_depto: str = Field(min_length=1, max_length=40)
+    real_piso_depto: str = Field(default="", max_length=40)
     real_codigo_postal: str = Field(min_length=1, max_length=20)
     real_localidad: str = Field(min_length=1, max_length=120)
     real_provincia: str = Field(min_length=1, max_length=80)
@@ -31,7 +31,7 @@ class PostulanteBase(BaseModel):
     # Domicilio constituido
     const_calle: str = Field(min_length=1, max_length=160)
     const_numero: str = Field(min_length=1, max_length=20)
-    const_piso_depto: str = Field(min_length=1, max_length=40)
+    const_piso_depto: str = Field(default="", max_length=40)
     const_codigo_postal: str = Field(min_length=1, max_length=20)
     const_localidad: str = Field(min_length=1, max_length=120)
     const_provincia: str = Field(min_length=1, max_length=80)

@@ -17,6 +17,8 @@ const estadoInicial = {
 const CAMPOS_OPCIONALES = [
   "telefono_particular",
   "telefono_alternativo",
+  "real_piso_depto",
+  "const_piso_depto",
   "especialidad",
   "cargo_establecimiento",
   "cargo_cargo",
@@ -428,14 +430,16 @@ function DomicilioCampos({ prefijo, form, set, invalido, disabled = false, provi
           value={form[c("numero")]} onChange={(e) => set(c("numero"), e.target.value)} />
       </div>
       <div className="col-md-4 mb-3">
-        <Label>Piso/Depto</Label>
-        <input className={`form-control ${invalido(c("piso_depto")) ? "is-invalid" : ""}`} disabled={disabled}
+        <label className="form-label">Piso/Depto</label>
+        <input className="form-control" disabled={disabled}
           value={form[c("piso_depto")]} onChange={(e) => set(c("piso_depto"), e.target.value)} />
       </div>
       <div className="col-md-3 mb-3">
         <Label>Código Postal</Label>
         <input className={`form-control ${invalido(c("codigo_postal")) ? "is-invalid" : ""}`} disabled={disabled}
-          value={form[c("codigo_postal")]} onChange={(e) => set(c("codigo_postal"), e.target.value)} />
+          inputMode="numeric" maxLength={10}
+          value={form[c("codigo_postal")]}
+          onChange={(e) => set(c("codigo_postal"), e.target.value.replace(/\D/g, ""))} />
       </div>
       <div className="col-md-5 mb-3">
         <Label>Localidad</Label>
