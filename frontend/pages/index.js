@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { crearInscripcion } from "@/lib/api";
 import { PROVINCIAS, SEXOS, TIPOS_DOCUMENTO, TITULO_FIJO, NACIONALIDADES } from "@/lib/constants";
+import AutocompleteDireccion from "@/components/AutocompleteDireccion";
 
 const estadoInicial = {
   apellido: "", nombre: "", dni: "", cuil: "", sexo: "", fecha_nacimiento: "", nacionalidad: "",
@@ -417,12 +418,31 @@ export default function FormularioInscripcion() {
 
 function DomicilioCampos({ prefijo, form, set, invalido, disabled = false, provinciaFija = false }) {
   const c = (s) => `${prefijo}_${s}`;
+
+  // Al elegir una dirección de Georef, completa los campos correspondientes.
+  function onSelectDireccion({ calle, numero, localidad, provincia }) {
+    set(c("calle"), calle);
+    if (numero) set(c("numero"), numero);
+    // En el domicilio constituido, localidad y provincia quedan fijas (CABA).
+    if (!provinciaFija) {
+      if (localidad) set(c("localidad"), localidad);
+      if (provincia) set(c("provincia"), provincia);
+    }
+  }
+
   return (
     <div className="row">
       <div className="col-md-6 mb-3">
         <Label>Calle</Label>
-        <input className={`form-control ${invalido(c("calle")) ? "is-invalid" : ""}`} disabled={disabled}
-          value={form[c("calle")]} onChange={(e) => set(c("calle"), e.target.value)} />
+        <AutocompleteDireccion
+          className={`form-control ${invalido(c("calle")) ? "is-invalid" : ""}`}
+          disabled={disabled}
+          soloCABA={provinciaFija}
+          value={form[c("calle")]}
+          onChange={(v) => set(c("calle"), v)}
+          onSelect={onSelectDireccion}
+        />
+        <span className="form-hint">Buscá y elegí tu dirección para autocompletar los datos.</span>
       </div>
       <div className="col-md-2 mb-3">
         <Label>Número</Label>
