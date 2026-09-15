@@ -1,28 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 
-// ID de provincia CABA en Georef
-const CABA_ID = "02";
-const GEOREF = "https://apis.datos.gob.ar/georef/api/direcciones";
+const GEOREF_CALLES = "https://apis.datos.gob.ar/georef/api/calles";
 
 /**
- * Campo de búsqueda de direcciones reales usando la API Georef (datos.gob.ar).
- * Al seleccionar una sugerencia, llama onSelect con { calle, numero, localidad, provincia }.
+ * Buscador de calles reales usando la API Georef (datos.gob.ar), endpoint /calles.
+ * Hace búsqueda por coincidencia parcial (no exacta) y puede filtrar por provincia.
  *
  * Props:
  * - value: texto actual de la calle
  * - onChange: (texto) => void  — cambio manual del texto
- * - onSelect: ({calle, numero, localidad, provincia}) => void
- * - soloCABA: boolean — si true, filtra resultados a CABA
- * - className, disabled, id
+ * - onSelect: ({ calle, localidad, provincia }) => void
+ * - provinciaId: string | "" — ID Georef de la provincia para filtrar (vacío = todo el país)
+ * - className, disabled, id, placeholder
  */
 export default function AutocompleteDireccion({
   value,
   onChange,
   onSelect,
-  soloCABA = false,
+  provinciaId = "",
   className = "form-control",
   disabled = false,
   id,
+  placeholder = "Empezá a escribir la calle…",
 }) {
   const [sugerencias, setSugerencias] = useState([]);
   const [abierto, setAbierto] = useState(false);
@@ -30,14 +29,11 @@ export default function AutocompleteDireccion({
   const [resaltado, setResaltado] = useState(-1);
   const debounceRef = useRef(null);
   const boxRef = useRef(null);
-  const ignorarRef = useRef(false); // evita re-buscar tras seleccionar
+  const ignorarRef = useRef(false);
 
   useEffect(() => {
-    // Cerrar el desplegable al hacer clic fuera
     function handleClickFuera(e) {
-      if (boxRef.current && !boxRef.current.contains(e.target)) {
-        setAbierto(false);
-      }
+      if (boxRef.current && !boxRef.current.contains(e.target)) setAbierto(false);
     }
     document.addEventListener("mousedown", handleClickFuera);
     return () => document.removeEventListener("mousedown", handleClickFuera);
@@ -49,26 +45,29 @@ export default function AutocompleteDireccion({
       return;
     }
     const texto = (value || "").trim();
-    if (texto.length < 3) {
+    if (texto.length < 2) {
       setSugerencias([]);
       setAbierto(false);
       return;
     }
-    // Debounce de 350ms
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => buscar(texto), 350);
+    debounceRef.current = setTimeout(() => buscar(texto), 300);
     return () => clearTimeout(debounceRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [value, provinciaId]);
 
   async function buscar(texto) {
     setCargando(true);
     try {
-      const params = new URLSearchParams({ direccion: texto, max: "6" });
-      if (soloCABA) params.set("provincia", CABA_ID);
-      const res = await fetch(`${GEOREF}?${params.toString()}`);
+      const params = new URLSearchParams({
+        nombre: texto,
+        max: "10",
+        campos: "nombre,localidad_censal,provincia",
+      });
+      if (provinciaId) params.set("provincia", provinciaId);
+      const res = await fetch(`${GEOREF_CALLES}?${params.toString()}`);
       const data = await res.json();
-      setSugerencias(data.direcciones || []);
+      setSugerencias(data.calles || []);
       setAbierto(true);
       setResaltado(-1);
     } catch {
@@ -78,13 +77,21 @@ export default function AutocompleteDireccion({
     }
   }
 
-  function elegir(dir) {
+  function etiqueta(calle) {
+    const loc = calle.localidad_censal?.nombre;
+    const prov = calle.provincia?.nombre;
+    const partes = [calle.nombre];
+    if (loc) partes.push(loc);
+    if (prov && prov !== loc) partes.push(prov);
+    return partes.join(", ");
+  }
+
+  function elegir(calle) {
     ignorarRef.current = true;
     onSelect({
-      calle: dir.calle?.nombre || "",
-      numero: dir.altura?.valor != null ? String(dir.altura.valor) : "",
-      localidad: dir.localidad_censal?.nombre || "",
-      provincia: dir.provincia?.nombre || "",
+      calle: calle.nombre || "",
+      localidad: calle.localidad_censal?.nombre || "",
+      provincia: calle.provincia?.nombre || "",
     });
     setAbierto(false);
     setSugerencias([]);
@@ -114,15 +121,13 @@ export default function AutocompleteDireccion({
         disabled={disabled}
         value={value}
         autoComplete="off"
-        placeholder="Empezá a escribir la calle…"
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         onFocus={() => sugerencias.length > 0 && setAbierto(true)}
       />
       {cargando && (
-        <span
-          style={{ position: "absolute", right: 10, top: 9, fontSize: 12, color: "#6b7580" }}
-        >
+        <span style={{ position: "absolute", right: 10, top: 9, fontSize: 12, color: "#6b7580" }}>
           buscando…
         </span>
       )}
@@ -145,12 +150,12 @@ export default function AutocompleteDireccion({
             overflowY: "auto",
           }}
         >
-          {sugerencias.map((dir, i) => (
+          {sugerencias.map((calle, i) => (
             <li
-              key={`${dir.calle?.id}-${i}`}
+              key={`${calle.id}-${i}`}
               onMouseDown={(e) => {
                 e.preventDefault();
-                elegir(dir);
+                elegir(calle);
               }}
               onMouseEnter={() => setResaltado(i)}
               style={{
@@ -160,7 +165,7 @@ export default function AutocompleteDireccion({
                 background: i === resaltado ? "#eef4f8" : "transparent",
               }}
             >
-              {dir.nomenclatura}
+              {etiqueta(calle)}
             </li>
           ))}
         </ul>

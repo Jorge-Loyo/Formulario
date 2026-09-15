@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { crearInscripcion } from "@/lib/api";
-import { PROVINCIAS, SEXOS, TIPOS_DOCUMENTO, TITULO_FIJO, NACIONALIDADES } from "@/lib/constants";
+import { PROVINCIAS, SEXOS, TIPOS_DOCUMENTO, TITULO_FIJO, NACIONALIDADES, PROVINCIA_IDS } from "@/lib/constants";
 import AutocompleteDireccion from "@/components/AutocompleteDireccion";
 
 const estadoInicial = {
@@ -419,37 +419,64 @@ export default function FormularioInscripcion() {
 function DomicilioCampos({ prefijo, form, set, invalido, disabled = false, provinciaFija = false }) {
   const c = (s) => `${prefijo}_${s}`;
 
-  // Al elegir una dirección de Georef, completa los campos correspondientes.
-  function onSelectDireccion({ calle, numero, localidad, provincia }) {
+  // Provincia efectiva: fija en CABA para el constituido, o la elegida en el real.
+  const provinciaSel = provinciaFija ? "Ciudad Autónoma de Buenos Aires" : form[c("provincia")];
+  const provinciaId = PROVINCIA_IDS[provinciaSel] || "";
+  // La calle se habilita una vez elegida la provincia (en el constituido siempre está lista).
+  const calleHabilitada = !disabled && (provinciaFija || Boolean(provinciaSel));
+
+  // Al elegir una calle de Georef, completa calle y (en el real) localidad.
+  function onSelectCalle({ calle, localidad }) {
     set(c("calle"), calle);
-    if (numero) set(c("numero"), numero);
-    // En el domicilio constituido, localidad y provincia quedan fijas (CABA).
-    if (!provinciaFija) {
-      if (localidad) set(c("localidad"), localidad);
-      if (provincia) set(c("provincia"), provincia);
-    }
+    if (!provinciaFija && localidad) set(c("localidad"), localidad);
+  }
+
+  // Al cambiar la provincia en el real, se limpia la calle previa para re-buscar.
+  function onChangeProvincia(v) {
+    set(c("provincia"), v);
+    set(c("calle"), "");
+    set(c("localidad"), "");
   }
 
   return (
     <div className="row">
-      <div className="col-md-6 mb-3">
+      {/* Provincia primero */}
+      <div className="col-md-4 mb-3">
+        <Label>Provincia</Label>
+        {provinciaFija ? (
+          <select className="form-control" value="Ciudad Autónoma de Buenos Aires" disabled>
+            <option value="Ciudad Autónoma de Buenos Aires">Ciudad Autónoma de Buenos Aires</option>
+          </select>
+        ) : (
+          <select className={`form-control ${invalido(c("provincia")) ? "is-invalid" : ""}`} disabled={disabled}
+            value={form[c("provincia")]} onChange={(e) => onChangeProvincia(e.target.value)}>
+            <option value="">Seleccionar</option>
+            {PROVINCIAS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        )}
+      </div>
+
+      {/* Calle (filtrada por la provincia elegida) */}
+      <div className="col-md-8 mb-3">
         <Label>Calle</Label>
         <AutocompleteDireccion
           className={`form-control ${invalido(c("calle")) ? "is-invalid" : ""}`}
-          disabled={disabled}
-          soloCABA={provinciaFija}
+          disabled={!calleHabilitada}
+          provinciaId={provinciaId}
           value={form[c("calle")]}
           onChange={(v) => set(c("calle"), v)}
-          onSelect={onSelectDireccion}
+          onSelect={onSelectCalle}
+          placeholder={calleHabilitada ? "Empezá a escribir la calle…" : "Elegí primero la provincia"}
         />
-        <span className="form-hint">Buscá y elegí tu dirección para autocompletar los datos.</span>
+        <span className="form-hint">Escribí parte del nombre y elegí la calle de la lista.</span>
       </div>
-      <div className="col-md-2 mb-3">
+
+      <div className="col-md-3 mb-3">
         <Label>Número</Label>
         <input className={`form-control ${invalido(c("numero")) ? "is-invalid" : ""}`} disabled={disabled}
           value={form[c("numero")]} onChange={(e) => set(c("numero"), e.target.value)} />
       </div>
-      <div className="col-md-4 mb-3">
+      <div className="col-md-3 mb-3">
         <label className="form-label">Piso/Depto</label>
         <input className="form-control" disabled={disabled}
           value={form[c("piso_depto")]} onChange={(e) => set(c("piso_depto"), e.target.value)} />
@@ -461,27 +488,13 @@ function DomicilioCampos({ prefijo, form, set, invalido, disabled = false, provi
           value={form[c("codigo_postal")]}
           onChange={(e) => set(c("codigo_postal"), e.target.value.replace(/\D/g, ""))} />
       </div>
-      <div className="col-md-5 mb-3">
+      <div className="col-md-3 mb-3">
         <Label>Localidad</Label>
         {provinciaFija ? (
           <input className="form-control" value="CABA" readOnly disabled />
         ) : (
           <input className={`form-control ${invalido(c("localidad")) ? "is-invalid" : ""}`} disabled={disabled}
             value={form[c("localidad")]} onChange={(e) => set(c("localidad"), e.target.value)} />
-        )}
-      </div>
-      <div className="col-md-4 mb-3">
-        <Label>Provincia</Label>
-        {provinciaFija ? (
-          <select className="form-control" value="Ciudad Autónoma de Buenos Aires" disabled>
-            <option value="Ciudad Autónoma de Buenos Aires">Ciudad Autónoma de Buenos Aires</option>
-          </select>
-        ) : (
-          <select className={`form-control ${invalido(c("provincia")) ? "is-invalid" : ""}`} disabled={disabled}
-            value={form[c("provincia")]} onChange={(e) => set(c("provincia"), e.target.value)}>
-            <option value="">Seleccionar</option>
-            {PROVINCIAS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
         )}
       </div>
     </div>
