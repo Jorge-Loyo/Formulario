@@ -27,7 +27,7 @@ export default function Layout({ children }) {
         <div className="container">
           <div>Gobierno de la Ciudad de Buenos Aires</div>
           <div style={{ opacity: 0.7, marginTop: 4 }}>
-            Inscripción a Concurso Público · Sistema de gestión de postulaciones
+            Preinscripción a Concurso Público · Sistema de gestión de postulaciones
           </div>
         </div>
       </footer>
