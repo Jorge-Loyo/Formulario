@@ -13,6 +13,8 @@ export default function Admin() {
   const [postulantes, setPostulantes] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 10;
 
   // Restaurar sesión guardada
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function Admin() {
     try {
       const data = await listarPostulantes(busqueda, authActual);
       setPostulantes(data);
+      setPagina(1);
     } catch (e) {
       if (e.message === "401") {
         setAuth(null);
@@ -131,6 +134,11 @@ export default function Admin() {
   }
 
   // --- Listado ---
+  const totalPaginas = Math.max(1, Math.ceil(postulantes.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const inicio = (paginaActual - 1) * POR_PAGINA;
+  const paginados = postulantes.slice(inicio, inicio + POR_PAGINA);
+
   return (
     <>
       <div className="hero d-flex justify-content-between align-items-center flex-wrap">
@@ -161,48 +169,76 @@ export default function Admin() {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
-        <div className="table-responsive">
-          <table className="table table-hover align-middle">
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Apellido y Nombre</th>
-                <th>DNI</th>
-                <th>CUIL</th>
-                <th>Email</th>
-                <th>Fecha</th>
-                <th className="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cargando ? (
-                <tr><td colSpan={7} className="text-center py-4">Cargando...</td></tr>
-              ) : postulantes.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-4 text-muted">Sin resultados.</td></tr>
-              ) : (
-                postulantes.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.id}</td>
-                    <td>{p.apellido}, {p.nombre}</td>
-                    <td>{p.dni}</td>
-                    <td>{p.cuil}</td>
-                    <td>{p.email}</td>
-                    <td>{new Date(p.creado_en).toLocaleDateString("es-AR")}</td>
-                    <td className="text-end table-actions">
-                      <button className="btn btn-sm btn-outline-primary me-2" onClick={() => ver(p.id)}>
-                        <i className="bx bx-show" /> Ver
-                      </button>
-                      <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
-                        <i className="bx bx-printer" /> Imprimir
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <p className="form-hint">API: {API_URL}</p>
+        <table className="table table-hover align-middle" style={{ tableLayout: "auto", width: "100%" }}>
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Apellido y Nombre</th>
+              <th>DNI</th>
+              <th>CUIL</th>
+              <th>Email</th>
+              <th>Fecha</th>
+              <th className="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cargando ? (
+              <tr><td colSpan={7} className="text-center py-4">Cargando...</td></tr>
+            ) : postulantes.length === 0 ? (
+              <tr><td colSpan={7} className="text-center py-4 text-muted">Sin resultados.</td></tr>
+            ) : (
+              paginados.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.apellido}, {p.nombre}</td>
+                  <td>{p.dni}</td>
+                  <td>{p.cuil}</td>
+                  <td style={{ wordBreak: "break-all" }}>{p.email}</td>
+                  <td>{new Date(p.creado_en).toLocaleDateString("es-AR")}</td>
+                  <td className="text-end table-actions">
+                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => ver(p.id)}>
+                      <i className="bx bx-show" /> Ver
+                    </button>
+                    <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
+                      <i className="bx bx-printer" /> Imprimir
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {postulantes.length > 0 && (
+          <div className="d-flex justify-content-between align-items-center flex-wrap mt-3">
+            <span className="form-hint">
+              Mostrando {inicio + 1}–{Math.min(inicio + POR_PAGINA, postulantes.length)} de {postulantes.length}
+            </span>
+            {totalPaginas > 1 && (
+              <nav>
+                <ul className="pagination mb-0">
+                  <li className={`page-item ${paginaActual === 1 ? "disabled" : ""}`}>
+                    <button className="page-link" onClick={() => setPagina(paginaActual - 1)}>
+                      Anterior
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+                    <li key={n} className={`page-item ${n === paginaActual ? "active" : ""}`}>
+                      <button className="page-link" onClick={() => setPagina(n)}>{n}</button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${paginaActual === totalPaginas ? "disabled" : ""}`}>
+                    <button className="page-link" onClick={() => setPagina(paginaActual + 1)}>
+                      Siguiente
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            )}
+          </div>
+        )}
+
+        <p className="form-hint mt-2">API: {API_URL}</p>
       </section>
     </>
   );
