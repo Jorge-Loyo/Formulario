@@ -10,12 +10,20 @@
 
 body {
   margin: 0;
-  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Open Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   color: #1a1a1a;
   background: var(--gcba-gris);
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: "Nunito", "Open Sans", sans-serif;
 }
 
@@ -28,34 +36,19 @@ h1, h2, h3, h4 {
 /* Header institucional */
 .gcba-header {
   background: var(--gcba-azul);
-  color: #fff;
   padding: 14px 0;
-}
-.gcba-header .brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  border-bottom: 4px solid var(--gcba-amarillo);
 }
 .gcba-header .brand-logo {
-  font-family: "Nunito", sans-serif;
-  font-weight: 700;
-  font-size: 22px;
-  letter-spacing: 0.5px;
-  color: #fff;
-  text-decoration: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  text-decoration: none;
 }
-.gcba-header .brand-logo .bar {
-  width: 6px;
-  height: 30px;
-  background: var(--gcba-amarillo);
-  border-radius: 2px;
-}
-.gcba-header .brand-sub {
-  font-size: 13px;
-  opacity: 0.85;
+.gcba-header .brand-img {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
 }
 
 /* Footer */

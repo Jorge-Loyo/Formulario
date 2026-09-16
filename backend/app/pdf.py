@@ -1,4 +1,5 @@
 """Generación del PDF del formulario (versión de prueba, editable)."""
+import os
 from io import BytesIO
 
 from reportlab.lib import colors
@@ -12,6 +13,7 @@ from reportlab.platypus import (
     Table,
     TableStyle,
     PageBreak,
+    Image,
 )
 
 from .models import Postulante
@@ -19,6 +21,9 @@ from .models import Postulante
 # Colores institucionales aproximados del GCBA
 GCBA_AZUL = colors.HexColor("#153244")
 GCBA_AMARILLO = colors.HexColor("#FFDA1A")
+
+# Ruta del logo (blanco, sin fondo) para el header del PDF
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "logo-gcba.png")
 
 
 def _styles():
@@ -124,17 +129,48 @@ def _troquel(styles):
     return elems
 
 
+def _header_pdf():
+    """Banda azul institucional con el logo blanco del GCBA (como en la web)."""
+    ancho_util = 174 * mm  # A4 menos márgenes de 18mm por lado
+
+    if os.path.exists(LOGO_PATH):
+        logo = Image(LOGO_PATH)
+        # Escalar el logo a una altura fija manteniendo proporción
+        alto = 18 * mm
+        ratio = logo.imageWidth / logo.imageHeight if logo.imageHeight else 3
+        logo.drawHeight = alto
+        logo.drawWidth = alto * ratio
+        contenido = logo
+    else:
+        contenido = Paragraph("", getSampleStyleSheet()["BodyText"])
+
+    banda = Table([[contenido]], colWidths=[ancho_util], rowHeights=[26 * mm])
+    banda.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), GCBA_AZUL),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LINEBELOW", (0, 0), (-1, -1), 3, GCBA_AMARILLO),
+    ]))
+    return banda
+
+
 def generar_pdf_postulante(p: Postulante) -> bytes:
     """Genera el PDF de un postulante y devuelve los bytes."""
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
         leftMargin=18 * mm, rightMargin=18 * mm,
-        topMargin=16 * mm, bottomMargin=16 * mm,
+        topMargin=14 * mm, bottomMargin=16 * mm,
         title=f"Inscripción N° {p.id}",
     )
     styles = _styles()
     elems = []
+
+    elems.append(_header_pdf())
+    elems.append(Spacer(1, 10))
 
     elems.append(Paragraph("FORMULARIO DE INSCRIPCIÓN", styles["Titulo"]))
     elems.append(Paragraph(
@@ -199,6 +235,8 @@ def generar_pdf_postulante(p: Postulante) -> bytes:
         ("Establecimiento", p.cargo_establecimiento), ("Cargo", p.cargo_cargo),
     ], styles))
 
+    # A partir de acá, apoderado + documentación presentada van en una hoja nueva.
+    elems.append(PageBreak())
     elems.append(Paragraph("INSCRIPCIÓN POR APODERADO", styles["Seccion"]))
     elems.append(_seccion("Apoderado", [
         ("Nombre y Apellido", p.apoderado_nombre), ("Tipo de documento", p.apoderado_tipo_documento),
@@ -206,8 +244,8 @@ def generar_pdf_postulante(p: Postulante) -> bytes:
     ], styles))
 
     # --- Documentación presentada (campos a completar manualmente) ---
-    # Inicia en una hoja nueva para que la tabla no se corte entre páginas.
-    elems.append(PageBreak())
+    # Va debajo de la sección de apoderado, en la misma hoja.
+    elems.append(Spacer(1, 8))
     elems.append(Paragraph("DOCUMENTACIÓN PRESENTADA", styles["Seccion"]))
     elems.extend(_documentacion_presentada(styles))
 

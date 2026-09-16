@@ -5,17 +5,9 @@ export default function Layout({ children }) {
     <div className="app-shell">
       <header className="gcba-header">
         <div className="container">
-          <div className="brand">
-            <Link href="/" className="brand-logo">
-              <span className="bar" />
-              <span>
-                Buenos Aires
-                <span style={{ display: "block", fontSize: 12, fontWeight: 400, opacity: 0.85 }}>
-                  Ciudad
-                </span>
-              </span>
-            </Link>
-          </div>
+          <Link href="/" className="brand-logo">
+            <img src="/logo-gcba.png" alt="Buenos Aires Ciudad — DGAYDRH" className="brand-img" />
+          </Link>
         </div>
       </header>
 
