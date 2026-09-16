@@ -172,7 +172,7 @@ export default function FormularioInscripcion() {
               <span className="form-hint">Solo números, sin guiones (11 dígitos).</span>
             </div>
             <div className="col-md-2 mb-3">
-              <Label>Sexo</Label>
+              <Label>Género</Label>
               <select className={`form-control ${invalido("sexo") ? "is-invalid" : ""}`}
                 value={form.sexo} onChange={(e) => set("sexo", e.target.value)}>
                 <option value="">Seleccionar</option>

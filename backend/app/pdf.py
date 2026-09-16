@@ -33,7 +33,7 @@ def _styles():
     return styles
 
 
-SEXO_LABELS = {"M": "Masculino", "F": "Femenino", "NB": "NB", "NS": "Prefiero no decirlo"}
+SEXO_LABELS = {"M": "Masculino", "F": "Femenino", "NS": "Prefiero no decirlo"}
 
 
 def _label_sexo(valor):
@@ -163,7 +163,7 @@ def generar_pdf_postulante(p: Postulante) -> bytes:
     elems.append(_seccion("Datos personales", [
         ("Apellido", p.apellido), ("Nombre", p.nombre),
         ("DNI", p.dni), ("CUIL", p.cuil),
-        ("Sexo", _label_sexo(p.sexo)), ("Fecha de nacimiento", f"{p.fecha_nacimiento:%d/%m/%Y}"),
+        ("Género", _label_sexo(p.sexo)), ("Fecha de nacimiento", f"{p.fecha_nacimiento:%d/%m/%Y}"),
         ("Nacionalidad", p.nacionalidad), ("", ""),
     ], styles))
 

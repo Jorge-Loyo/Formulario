@@ -56,7 +56,6 @@ export const PROVINCIA_IDS = {
 export const SEXOS = [
   { value: "M", label: "Masculino" },
   { value: "F", label: "Femenino" },
-  { value: "NB", label: "NB" },
   { value: "NS", label: "Prefiero no decirlo" },
 ];
 
