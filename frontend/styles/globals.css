@@ -106,6 +106,20 @@ h4 {
   opacity: 0.9;
 }
 
+/* Botones dentro del hero (Salir, Developer, Admin, Volver): texto y borde blancos legibles. */
+.hero .btn-outline-light,
+.hero a.btn-outline-light {
+  color: #fff !important;
+  border-color: #fff !important;
+  background: transparent;
+}
+.hero .btn-outline-light:hover,
+.hero a.btn-outline-light:hover {
+  color: var(--gcba-azul) !important;
+  background: #fff !important;
+  border-color: #fff !important;
+}
+
 .field-error {
   color: #c1121f;
   font-size: 12px;
