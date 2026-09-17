@@ -26,6 +26,13 @@ services:
         sync: false
       - key: CONCURSOS_PASS
         sync: false
+      # Developer inicial (semilla) y secreto de tokens.
+      - key: DEVELOPER_USER
+        sync: false
+      - key: DEVELOPER_PASS
+        sync: false
+      - key: SECRET_KEY
+        sync: false
       # URL del frontend en Vercel (para CORS). Ej: https://tu-app.vercel.app
       - key: FRONTEND_ORIGIN
         sync: false

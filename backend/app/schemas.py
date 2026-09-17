@@ -57,6 +57,11 @@ class PostulanteCreate(PostulanteBase):
     pass
 
 
+class PostulanteUpdate(PostulanteBase):
+    """Edición desde el panel admin. Permite editar todos los campos (incluido título)."""
+    titulo: str = Field(min_length=1, max_length=160)
+
+
 class PostulanteOut(PostulanteBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -69,3 +74,54 @@ class InscripcionResponse(BaseModel):
     id: int
     mensaje: str
     email_enviado: bool
+
+
+# --- Autenticación ---
+class LoginRequest(BaseModel):
+    usuario: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    token: str
+    usuario: str
+    rol: str
+
+
+# --- Usuarios (gestión desde /developer) ---
+class UsuarioCreate(BaseModel):
+    usuario: str = Field(min_length=3, max_length=80)
+    password: str = Field(min_length=6, max_length=200)
+    rol: str = Field(pattern="^(admin|developer)$")
+
+
+class UsuarioUpdate(BaseModel):
+    # Campos opcionales para editar: cambiar clave, rol o activar/desactivar.
+    password: str | None = Field(default=None, min_length=6, max_length=200)
+    rol: str | None = Field(default=None, pattern="^(admin|developer)$")
+    activo: bool | None = None
+
+
+class UsuarioOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    usuario: str
+    rol: str
+    activo: bool
+    creado_en: datetime
+
+
+# --- Auditoría ---
+class AuditoriaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    entidad: str
+    entidad_id: int
+    accion: str
+    campo: str
+    valor_anterior: str
+    valor_nuevo: str
+    usuario: str
+    creado_en: datetime

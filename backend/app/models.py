@@ -1,7 +1,7 @@
 """Modelos ORM."""
 from datetime import datetime, date
 
-from sqlalchemy import Integer, String, Date, DateTime
+from sqlalchemy import Integer, String, Date, DateTime, Boolean, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -61,4 +61,34 @@ class Postulante(Base):
     apoderado_documento: Mapped[str] = mapped_column(String(40))
     apoderado_numero_acta: Mapped[str] = mapped_column(String(40))
 
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Usuario(Base):
+    """Usuarios del panel (roles: 'admin' o 'developer')."""
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    usuario: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(200))
+    rol: Mapped[str] = mapped_column(String(20), default="admin")  # 'admin' | 'developer'
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Auditoria(Base):
+    """Registro de cambios realizados desde el panel (no incluye cargas públicas)."""
+    __tablename__ = "auditoria"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # A qué entidad se refiere (ej. "postulante" o "usuario") y su id.
+    entidad: Mapped[str] = mapped_column(String(40), default="postulante")
+    entidad_id: Mapped[int] = mapped_column(Integer, default=0)
+    # Acción: 'editar', 'crear_usuario', 'editar_usuario', etc.
+    accion: Mapped[str] = mapped_column(String(40), default="editar")
+    campo: Mapped[str] = mapped_column(String(80), default="")
+    valor_anterior: Mapped[str] = mapped_column(Text, default="")
+    valor_nuevo: Mapped[str] = mapped_column(Text, default="")
+    # Quién hizo el cambio (nombre de usuario del panel).
+    usuario: Mapped[str] = mapped_column(String(80), default="")
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
