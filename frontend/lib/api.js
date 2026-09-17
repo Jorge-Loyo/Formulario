@@ -95,6 +95,15 @@ export async function descargarPdf(id) {
   return res.blob();
 }
 
+export async function validarPostulante(id) {
+  const res = await fetch(`${API_URL}/admin/postulantes/${id}/validar`, {
+    method: "POST",
+    headers: bearer(),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo validar.");
+  return res.json();
+}
+
 // ---- Developer: usuarios ----
 export async function listarUsuarios() {
   const res = await fetch(`${API_URL}/developer/usuarios`, { headers: bearer() });
@@ -128,5 +137,14 @@ export async function listarLogs(q) {
   if (q) url.searchParams.set("q", q);
   const res = await fetch(url.toString(), { headers: bearer() });
   if (!res.ok) await manejarError(res, "Error al obtener los logs.");
+  return res.json();
+}
+
+// ---- Developer: validadas ----
+export async function listarValidadas(q) {
+  const url = new URL(`${API_URL}/developer/validadas`);
+  if (q) url.searchParams.set("q", q);
+  const res = await fetch(url.toString(), { headers: bearer() });
+  if (!res.ok) await manejarError(res, "Error al obtener las validadas.");
   return res.json();
 }

@@ -68,6 +68,9 @@ class PostulanteOut(PostulanteBase):
     id: int
     titulo: str
     creado_en: datetime
+    validado: bool = False
+    validado_por: str = ""
+    validado_en: datetime | None = None
 
 
 class InscripcionResponse(BaseModel):

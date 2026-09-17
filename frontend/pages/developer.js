@@ -11,6 +11,7 @@ import {
   crearUsuario,
   editarUsuario,
   listarLogs,
+  listarValidadas,
 } from "@/lib/api";
 
 export default function Developer() {
@@ -104,13 +105,20 @@ export default function Developer() {
           </button>
         </li>
         <li className="nav-item">
+          <button className={`nav-link ${tab === "validadas" ? "active" : ""}`} onClick={() => setTab("validadas")}>
+            Validadas
+          </button>
+        </li>
+        <li className="nav-item">
           <button className={`nav-link ${tab === "logs" ? "active" : ""}`} onClick={() => setTab("logs")}>
             Auditoría (logs)
           </button>
         </li>
       </ul>
 
-      {tab === "usuarios" ? <Usuarios onExpira={logout} /> : <Logs onExpira={logout} />}
+      {tab === "usuarios" && <Usuarios onExpira={logout} />}
+      {tab === "validadas" && <Validadas onExpira={logout} />}
+      {tab === "logs" && <Logs onExpira={logout} />}
     </>
   );
 }
@@ -249,6 +257,72 @@ function Usuarios({ onExpira }) {
         </table>
       </section>
     </>
+  );
+}
+
+// ------------------ Preinscripciones validadas ------------------
+function Validadas({ onExpira }) {
+  const [lista, setLista] = useState([]);
+  const [q, setQ] = useState("");
+  const [error, setError] = useState("");
+
+  async function cargar(busqueda = "") {
+    setError("");
+    try {
+      setLista(await listarValidadas(busqueda));
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError("No se pudieron cargar las validadas.");
+    }
+  }
+  useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
+
+  return (
+    <section className="card-form">
+      <h2 className="section-title">Preinscripciones validadas</h2>
+      <form onSubmit={(e) => { e.preventDefault(); cargar(q); }} className="row g-2 mb-3">
+        <div className="col">
+          <input className="form-control" placeholder="Buscar por apellido, nombre, DNI, CUIL o email"
+            value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="col-auto">
+          <button className="btn btn-primary" type="submit">Buscar</button>
+        </div>
+        <div className="col-auto">
+          <button className="btn btn-outline-secondary" type="button" onClick={() => { setQ(""); cargar(""); }}>
+            Limpiar
+          </button>
+        </div>
+      </form>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <table className="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>N°</th><th>Apellido y Nombre</th><th>DNI</th><th>Email</th>
+            <th>Validada por</th><th>Fecha de validación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.length === 0 ? (
+            <tr><td colSpan={6} className="text-center py-3 text-muted">Sin preinscripciones validadas.</td></tr>
+          ) : lista.map((p) => (
+            <tr key={p.id}>
+              <td>{p.id}</td>
+              <td>{p.apellido}, {p.nombre}</td>
+              <td>{p.dni}</td>
+              <td style={{ wordBreak: "break-all" }}>{p.email}</td>
+              <td>{p.validado_por}</td>
+              <td style={{ whiteSpace: "nowrap" }}>
+                {p.validado_en ? new Date(p.validado_en).toLocaleString("es-AR") : "-"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="form-hint">Total validadas: {lista.length}</p>
+    </section>
   );
 }
 

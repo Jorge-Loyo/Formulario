@@ -171,6 +171,38 @@ def editar_postulante(
     return postulante
 
 
+@app.post("/admin/postulantes/{postulante_id}/validar", response_model=schemas.PostulanteOut)
+def validar_postulante(
+    postulante_id: int,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Marca/desmarca una preinscripción como validada (toggle) y lo audita."""
+    from datetime import datetime as _dt
+    postulante = db.get(models.Postulante, postulante_id)
+    if postulante is None:
+        raise HTTPException(status_code=404, detail="Postulante no encontrado")
+
+    nuevo_estado = not postulante.validado
+    postulante.validado = nuevo_estado
+    if nuevo_estado:
+        postulante.validado_por = user.usuario
+        postulante.validado_en = _dt.utcnow()
+    else:
+        postulante.validado_por = ""
+        postulante.validado_en = None
+
+    db.add(models.Auditoria(
+        entidad="postulante", entidad_id=postulante.id,
+        accion="validar" if nuevo_estado else "desvalidar",
+        campo="validado", valor_anterior=str(not nuevo_estado), valor_nuevo=str(nuevo_estado),
+        usuario=user.usuario,
+    ))
+    db.commit()
+    db.refresh(postulante)
+    return postulante
+
+
 # =========================================================================
 # Gestión de usuarios y auditoría (solo developer)
 # =========================================================================
@@ -263,5 +295,27 @@ def listar_logs(
             models.Auditoria.campo.ilike(like),
             models.Auditoria.accion.ilike(like),
             models.Auditoria.entidad.ilike(like),
+        ))
+    return db.execute(stmt).scalars().all()
+
+
+@app.get("/developer/validadas", response_model=list[schemas.PostulanteOut])
+def listar_validadas(
+    q: str | None = Query(default=None, description="Búsqueda por apellido, nombre, DNI, CUIL o email"),
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Lista las preinscripciones validadas."""
+    stmt = select(models.Postulante).where(
+        models.Postulante.validado == True  # noqa: E712
+    ).order_by(models.Postulante.validado_en.desc())
+    if q:
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(
+            models.Postulante.apellido.ilike(like),
+            models.Postulante.nombre.ilike(like),
+            models.Postulante.dni.ilike(like),
+            models.Postulante.cuil.ilike(like),
+            models.Postulante.email.ilike(like),
         ))
     return db.execute(stmt).scalars().all()

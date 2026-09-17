@@ -8,7 +8,9 @@ import {
   cerrarSesion,
   listarPostulantes,
   descargarPdf,
+  validarPostulante,
 } from "@/lib/api";
+import GraficoPostulaciones from "@/components/GraficoPostulaciones";
 
 export default function Admin() {
   const [logueado, setLogueado] = useState(false);
@@ -105,6 +107,23 @@ export default function Admin() {
     }
   }
 
+  async function validar(id) {
+    try {
+      const actualizado = await validarPostulante(id);
+      // Actualiza la fila en memoria sin recargar toda la lista.
+      setPostulantes((lista) =>
+        lista.map((p) => (p.id === id ? { ...p, ...actualizado } : p))
+      );
+    } catch (e) {
+      if (e.message === "401") {
+        cerrarSesion();
+        setLogueado(false);
+      } else {
+        alert("No se pudo validar.");
+      }
+    }
+  }
+
   // --- Pantalla de login ---
   if (!logueado) {
     return (
@@ -134,6 +153,11 @@ export default function Admin() {
     );
   }
 
+  // --- KPIs ---
+  const totalPostulados = postulantes.length;
+  const totalInscriptos = postulantes.filter((p) => p.validado).length;
+  const totalPreinscriptos = totalPostulados - totalInscriptos;
+
   // --- Listado ---
   const totalPaginas = Math.max(1, Math.ceil(postulantes.length / POR_PAGINA));
   const paginaActual = Math.min(pagina, totalPaginas);
@@ -141,7 +165,7 @@ export default function Admin() {
   const paginados = postulantes.slice(inicio, inicio + POR_PAGINA);
 
   return (
-    <>
+    <div className="admin-wide">
       <div className="hero d-flex justify-content-between align-items-center flex-wrap">
         <div>
           <h1>Postulados</h1>
@@ -158,6 +182,46 @@ export default function Admin() {
           </button>
         </div>
       </div>
+
+      {/* KPIs */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-4">
+          <div className="kpi-card">
+            <div className="kpi-icono" style={{ background: "#e8eef3", color: "#153244" }}>
+              <i className="bx bx-group" />
+            </div>
+            <div>
+              <div className="kpi-numero">{totalPostulados}</div>
+              <div className="kpi-label">Total postulados</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="kpi-card">
+            <div className="kpi-icono" style={{ background: "#e8f5e9", color: "#2e7d32" }}>
+              <i className="bx bx-check-circle" />
+            </div>
+            <div>
+              <div className="kpi-numero" style={{ color: "#2e7d32" }}>{totalInscriptos}</div>
+              <div className="kpi-label">Inscriptos (validados)</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="kpi-card">
+            <div className="kpi-icono" style={{ background: "#fdf1dd", color: "#b8770f" }}>
+              <i className="bx bx-time-five" />
+            </div>
+            <div>
+              <div className="kpi-numero" style={{ color: "#b8770f" }}>{totalPreinscriptos}</div>
+              <div className="kpi-label">Preinscriptos (pendientes)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de evolución */}
+      <GraficoPostulaciones postulantes={postulantes} />
 
       <section className="card-form">
         <form onSubmit={onBuscar} className="row g-2 mb-3">
@@ -187,14 +251,15 @@ export default function Admin() {
               <th>CUIL</th>
               <th>Email</th>
               <th>Fecha</th>
+              <th>Estado</th>
               <th className="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando ? (
-              <tr><td colSpan={7} className="text-center py-4">Cargando...</td></tr>
+              <tr><td colSpan={8} className="text-center py-4">Cargando...</td></tr>
             ) : postulantes.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-4 text-muted">Sin resultados.</td></tr>
+              <tr><td colSpan={8} className="text-center py-4 text-muted">Sin resultados.</td></tr>
             ) : (
               paginados.map((p) => (
                 <tr key={p.id}>
@@ -204,16 +269,37 @@ export default function Admin() {
                   <td>{p.cuil}</td>
                   <td style={{ wordBreak: "break-all" }}>{p.email}</td>
                   <td>{new Date(p.creado_en).toLocaleDateString("es-AR")}</td>
-                  <td className="text-end table-actions">
-                    <Link href={`/admin/editar/${p.id}`} className="btn btn-sm btn-outline-secondary me-2">
-                      <i className="bx bx-edit" /> Editar
-                    </Link>
-                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => ver(p.id)}>
-                      <i className="bx bx-show" /> Ver
-                    </button>
-                    <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
-                      <i className="bx bx-printer" /> Imprimir
-                    </button>
+                  <td>
+                    {p.validado ? (
+                      <span className="badge" title={`Validado por ${p.validado_por}`}
+                        style={{ background: "#2e7d32", color: "#fff" }}>
+                        Inscripto
+                      </span>
+                    ) : (
+                      <span className="badge" style={{ background: "#f5a623", color: "#000" }}>
+                        Preinscripto
+                      </span>
+                    )}
+                  </td>
+                  <td className="table-actions">
+                    <div className="d-flex justify-content-end" style={{ gap: 8 }}>
+                      <button
+                        className={`btn btn-sm ${p.validado ? "btn-success" : "btn-outline-success"}`}
+                        onClick={() => validar(p.id)}
+                        title={p.validado ? "Quitar validación" : "Validar preinscripción"}
+                      >
+                        <i className="bx bx-check" /> {p.validado ? "Validada" : "Validar"}
+                      </button>
+                      <Link href={`/admin/editar/${p.id}`} className="btn btn-sm btn-outline-secondary">
+                        <i className="bx bx-edit" /> Editar
+                      </Link>
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => ver(p.id)}>
+                        <i className="bx bx-show" /> Ver
+                      </button>
+                      <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
+                        <i className="bx bx-printer" /> Imprimir
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -246,6 +332,6 @@ export default function Admin() {
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }

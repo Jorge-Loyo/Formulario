@@ -63,6 +63,11 @@ class Postulante(Base):
 
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    # --- Validación por un administrativo ---
+    validado: Mapped[bool] = mapped_column(Boolean, default=False)
+    validado_por: Mapped[str] = mapped_column(String(80), default="")
+    validado_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
 
 class Usuario(Base):
     """Usuarios del panel (roles: 'admin' o 'developer')."""
