@@ -60,6 +60,21 @@ def crear_inscripcion(payload: schemas.PostulanteCreate, db: Session = Depends(g
     # Título fijo — forzado en el servidor, no depende del cliente.
     datos["titulo"] = "Licenciado en Psicología"
 
+    # Evitar duplicados: no permitir email ni DNI ya registrados.
+    from sqlalchemy import func
+    email_norm = datos["email"].strip().lower()
+    dni_norm = datos["dni"].strip()
+    ya_email = db.execute(
+        select(models.Postulante).where(func.lower(models.Postulante.email) == email_norm)
+    ).scalar_one_or_none()
+    if ya_email is not None:
+        raise HTTPException(status_code=409, detail="Ya existe una preinscripción con ese correo electrónico.")
+    ya_dni = db.execute(
+        select(models.Postulante).where(models.Postulante.dni == dni_norm)
+    ).scalar_one_or_none()
+    if ya_dni is not None:
+        raise HTTPException(status_code=409, detail="Ya existe una preinscripción con ese DNI.")
+
     postulante = models.Postulante(**datos)
     db.add(postulante)
     db.commit()
