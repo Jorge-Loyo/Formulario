@@ -1,13 +1,32 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 export default function Layout({ children }) {
+  const router = useRouter();
+  const isInfoPage = router.pathname === "/informacion-importante";
+
   return (
     <div className="app-shell">
       <header className="gcba-header">
-        <div className="container">
+        <div className="container gcba-header-inner">
           <Link href="/" className="brand-logo">
             <img src="/logo-gcba.png" alt="Buenos Aires Ciudad — DGAYDRH" className="brand-img" />
           </Link>
+          {!isInfoPage && (
+            <div>
+              <a
+                href="/informacion-importante"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-info-header"
+              >
+                <i className="bx bx-info-circle" /> Información importante
+              </a>
+              <p style={{ color: "#cfd6db", fontSize: 11, marginTop: 4 }}>
+                Detalle de llamado a concurso
+              </p>
+            </div>
+          )}
         </div>
       </header>
 
