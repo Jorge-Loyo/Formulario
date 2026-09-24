@@ -13,7 +13,7 @@ export default function Layout({ children }) {
             <img src="/logo-gcba.png" alt="Buenos Aires Ciudad — DGAYDRH" className="brand-img" />
           </Link>
           {!isInfoPage && (
-            <div>
+            <div className="header-info">
               <a
                 href="/informacion-importante"
                 target="_blank"
@@ -22,9 +22,7 @@ export default function Layout({ children }) {
               >
                 <i className="bx bx-info-circle" /> Información importante
               </a>
-              <p style={{ color: "#cfd6db", fontSize: 11, marginTop: 4 }}>
-                Detalle de llamado a concurso
-              </p>
+              <p className="header-info-hint">Detalle de llamado a concurso</p>
             </div>
           )}
         </div>

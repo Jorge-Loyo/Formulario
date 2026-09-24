@@ -27,7 +27,7 @@ export default function InformacionImportante() {
             <div
               style={{
                 textAlign: "center",
-                padding: 120,
+                padding: "120px 16px",
                 color: "#6b7580",
                 fontSize: 16,
               }}

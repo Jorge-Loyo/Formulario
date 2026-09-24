@@ -45,7 +45,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 npm run dev
 ```
 
-La app estará disponible en → **http://localhost:3000**
+La app estará disponible en → **http://localhost:3001**
 
 ---
 
@@ -83,7 +83,7 @@ La API estará disponible en → **http://localhost:8000**
 
 ## 4. Ver la aplicación
 
-1. **Con backend corriendo**: Abrí **http://localhost:3000** en tu navegador.
+1. **Con backend corriendo**: Abrí **http://localhost:3001** en tu navegador.
 2. **Sin backend**: El formulario funciona, pero el envío de datos dará error (necesitás el backend activo).
 
 ---

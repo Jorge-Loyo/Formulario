@@ -48,12 +48,12 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-El frontend estará en **http://localhost:3000**
+El frontend estará en **http://localhost:3001**
 
 ### Paso 5 — Abrir el navegador
 
 ```
-http://localhost:3000
+http://localhost:3001
 ```
 
 ---
@@ -108,7 +108,7 @@ Formulario/
 - `EMAIL_FROM` — remitente verificado en Resend.
 - `ADMIN_USER` / `ADMIN_PASS` — credenciales del usuario admin (default: `admin` / `cambiar-esta-clave`).
 - `CONCURSOS_USER` / `CONCURSOS_PASS` — credenciales del usuario concursos.
-- `FRONTEND_ORIGIN` — origen permitido para CORS (default: `http://localhost:3000`).
+- `FRONTEND_ORIGIN` — origen permitido para CORS (default: `http://localhost:3001`).
 
 ### Frontend (`frontend/.env.local`)
 

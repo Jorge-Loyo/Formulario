@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     secret_key: str = "cambiar-este-secreto-en-produccion"
 
     # CORS: origen del frontend (Vercel). Coma-separado para varios.
-    frontend_origin: str = "http://localhost:3000"
+    frontend_origin: str = "http://localhost:3001"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

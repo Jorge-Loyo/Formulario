@@ -75,6 +75,39 @@ h4 {
   filter: brightness(0.92);
   color: var(--gcba-azul);
 }
+.header-info-hint {
+  color: #cfd6db;
+  font-size: 11px;
+  margin: 4px 0 0;
+}
+
+/* Header en mobile: logo más chico y botón debajo, a todo el ancho */
+@media (max-width: 576px) {
+  .gcba-header {
+    padding: 10px 0;
+  }
+  .gcba-header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .gcba-header .brand-logo {
+    justify-content: center;
+  }
+  .gcba-header .brand-img {
+    height: 72px;
+    max-width: 100%;
+    object-position: center;
+  }
+  .header-info {
+    text-align: center;
+  }
+  .btn-info-header {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+  }
+}
 
 /* Footer */
 .gcba-footer {
