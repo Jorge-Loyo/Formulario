@@ -268,3 +268,112 @@ h4 {
 .alert-fixed {
   border-radius: 8px;
 }
+
+.hero {
+  gap: 12px;
+}
+
+/* Pestañas que se desplazan horizontalmente en vez de partirse en dos líneas */
+.nav-tabs-scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.nav-tabs-scroll .nav-link {
+  white-space: nowrap;
+}
+
+/* Vistas admin/developer en mobile */
+@media (max-width: 576px) {
+  .page-content {
+    padding: 16px 0 32px;
+  }
+  .admin-wide {
+    width: 100%;
+    left: 0;
+    transform: none;
+  }
+  .hero {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+  .card-form {
+    padding: 16px;
+  }
+  .kpi-card {
+    padding: 14px 16px;
+  }
+  .kpi-numero {
+    font-size: 26px;
+  }
+  /* Botones de acción de la tabla: solo ícono para que no ensanchen la fila */
+  .table-actions .btn-label {
+    display: none;
+  }
+}
+
+/* Gráfico: título y rango se acomodan en dos líneas si no entran */
+.grafico-toggle {
+  gap: 8px;
+  text-align: left;
+}
+.grafico-rango {
+  font-size: 12px;
+  color: #5a6672;
+  font-weight: 400;
+}
+.grafico-scroll {
+  overflow-x: auto;
+}
+
+.confirmacion-titulo {
+  margin: 0;
+  color: var(--gcba-azul);
+}
+
+/* Contenedor del visor de PDF */
+.pdf-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(21, 50, 68, 0.08);
+  padding: 28px;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Resto de las páginas en mobile */
+@media (max-width: 576px) {
+  .grafico-card {
+    padding: 14px;
+  }
+  .grafico-rango {
+    font-size: 11px;
+  }
+  .confirmacion-titulo {
+    font-size: 1.3rem;
+  }
+  .pdf-card {
+    padding: 12px;
+    min-height: 60vh;
+  }
+  /* Botones al pie de formularios: a todo el ancho y apilados */
+  .form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .pdf-actions {
+    flex-direction: column;
+  }
+  .pdf-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

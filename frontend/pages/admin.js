@@ -225,7 +225,7 @@ export default function Admin() {
 
       <section className="card-form">
         <form onSubmit={onBuscar} className="row g-2 mb-3">
-          <div className="col">
+          <div className="col-12 col-md">
             <input className="form-control" placeholder="Buscar por apellido, nombre, DNI, CUIL o email"
               value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
@@ -242,6 +242,7 @@ export default function Admin() {
 
         {error && <div className="alert alert-danger">{error}</div>}
 
+        <div className="table-responsive">
         <table className="table table-hover align-middle" style={{ tableLayout: "auto", width: "100%" }}>
           <thead>
             <tr>
@@ -288,16 +289,16 @@ export default function Admin() {
                         onClick={() => validar(p.id)}
                         title={p.validado ? "Quitar validación" : "Validar preinscripción"}
                       >
-                        <i className="bx bx-check" /> {p.validado ? "Validada" : "Validar"}
+                        <i className="bx bx-check" /> <span className="btn-label">{p.validado ? "Validada" : "Validar"}</span>
                       </button>
                       <Link href={`/admin/editar/${p.id}`} className="btn btn-sm btn-outline-secondary">
-                        <i className="bx bx-edit" /> Editar
+                        <i className="bx bx-edit" /> <span className="btn-label">Editar</span>
                       </Link>
                       <button className="btn btn-sm btn-outline-primary" onClick={() => ver(p.id)}>
-                        <i className="bx bx-show" /> Ver
+                        <i className="bx bx-show" /> <span className="btn-label">Ver</span>
                       </button>
                       <button className="btn btn-sm btn-primary" onClick={() => imprimir(p.id)}>
-                        <i className="bx bx-printer" /> Imprimir
+                        <i className="bx bx-printer" /> <span className="btn-label">Imprimir</span>
                       </button>
                     </div>
                   </td>
@@ -306,6 +307,7 @@ export default function Admin() {
             )}
           </tbody>
         </table>
+        </div>
 
         {postulantes.length > 0 && (
           <div className="d-flex justify-content-between align-items-center flex-wrap mt-3">
@@ -314,7 +316,7 @@ export default function Admin() {
             </span>
             {totalPaginas > 1 && (
               <nav>
-                <ul className="pagination mb-0">
+                <ul className="pagination flex-wrap mb-0">
                   <li className={`page-item ${paginaActual === 1 ? "disabled" : ""}`}>
                     <button className="page-link" onClick={() => setPagina(paginaActual - 1)}>Anterior</button>
                   </li>

@@ -112,7 +112,7 @@ export default function Developer() {
         </div>
       </div>
 
-      <ul className="nav nav-tabs mb-3">
+      <ul className="nav nav-tabs nav-tabs-scroll mb-3">
         <li className="nav-item">
           <button
             className={`nav-link ${tab === "usuarios" ? "active" : ""}`}
@@ -260,6 +260,7 @@ function Usuarios({ onExpira }) {
 
       <section className="card-form">
         <h2 className="section-title">Usuarios</h2>
+        <div className="table-responsive">
         <table className="table table-hover align-middle">
           <thead>
             <tr>
@@ -319,6 +320,7 @@ function Usuarios({ onExpira }) {
             )}
           </tbody>
         </table>
+        </div>
       </section>
     </>
   );
@@ -364,7 +366,7 @@ function Validadas({ onExpira }) {
         }}
         className="row g-2 mb-3"
       >
-        <div className="col">
+        <div className="col-12 col-md">
           <input
             className="form-control"
             placeholder="Buscar por apellido, nombre, DNI, CUIL o email"
@@ -393,6 +395,7 @@ function Validadas({ onExpira }) {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      <div className="table-responsive">
       <table className="table table-hover align-middle">
         <thead>
           <tr>
@@ -441,6 +444,7 @@ function Validadas({ onExpira }) {
           )}
         </tbody>
       </table>
+      </div>
       <p className="form-hint">Total validadas: {lista.length}</p>
     </section>
   );
@@ -475,7 +479,7 @@ function Logs({ onExpira }) {
         }}
         className="row g-2 mb-3"
       >
-        <div className="col">
+        <div className="col-12 col-md">
           <input
             className="form-control"
             placeholder="Buscar por usuario, campo, acción o entidad"
@@ -504,6 +508,7 @@ function Logs({ onExpira }) {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
+      <div className="table-responsive">
       <table className="table table-sm table-hover align-middle">
         <thead>
           <tr>
@@ -546,6 +551,7 @@ function Logs({ onExpira }) {
           )}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }

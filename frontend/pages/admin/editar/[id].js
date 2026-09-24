@@ -184,7 +184,7 @@ export default function EditarPostulante() {
             <h2 className="section-title">{sec.titulo}</h2>
             <div className="row">
               {sec.campos.map((c) => (
-                <div key={c.name} className={`col-md-${c.col} mb-3`}>
+                <div key={c.name} className={`${c.col <= 3 ? "col-6" : "col-12"} col-md-${c.col} mb-3`}>
                   <label className="form-label">{c.label}</label>
                   {c.tipo === "select" ? (
                     <select className="form-control" value={form[c.name] ?? ""}
@@ -212,7 +212,7 @@ export default function EditarPostulante() {
           </section>
         ))}
 
-        <div className="d-flex justify-content-end gap-2 mb-4">
+        <div className="d-flex justify-content-end gap-2 mb-4 form-actions">
           <Link href="/admin" className="btn btn-outline-secondary">Cancelar</Link>
           <button type="submit" className="btn btn-primary btn-lg" disabled={guardando}>
             {guardando ? "Guardando…" : "Guardar cambios"}

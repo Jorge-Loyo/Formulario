@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // Fecha de cierre del período (02/10/2026).
 const FECHA_CIERRE = new Date(2026, 9, 2); // mes 9 = octubre (0-indexado)
@@ -21,6 +21,15 @@ function claveDia(d) {
  */
 export default function GraficoPostulaciones({ postulantes }) {
   const [abierto, setAbierto] = useState(false); // arranca colapsado
+  // En teléfonos se dibuja más angosto y con scroll horizontal, para que el texto sea legible.
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 576px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
   const { puntos, maxDia, n, idxHoy } = useMemo(() => {
     if (!postulantes || postulantes.length === 0) {
       return { puntos: [], maxDia: 0, n: 0, idxHoy: 0 };
@@ -73,8 +82,8 @@ export default function GraficoPostulaciones({ postulantes }) {
     );
   }
 
-  const W = 1200;
-  const H = 340;
+  const W = mobile ? 700 : 1200;
+  const H = mobile ? 300 : 340;
   const padL = 12;
   const padR = 70;
   const padT = 32;
@@ -100,7 +109,7 @@ export default function GraficoPostulaciones({ postulantes }) {
 
   const ticks = Math.min(4, tope);
   const yTicks = Array.from({ length: ticks + 1 }, (_, i) => Math.round((tope * i) / ticks));
-  const paso = Math.max(1, Math.floor(n / 8));
+  const paso = Math.max(1, Math.floor(n / (mobile ? 5 : 8)));
   const totalPeriodo = puntos.reduce((s, p) => s + p.cant, 0);
 
   return (
@@ -108,7 +117,7 @@ export default function GraficoPostulaciones({ postulantes }) {
       <button type="button" onClick={() => setAbierto((v) => !v)} className="grafico-toggle">
         <span className="grafico-titulo">Postulaciones por día</span>
         <span className="d-flex align-items-center" style={{ gap: 10 }}>
-          <span style={{ fontSize: 12, color: "#5a6672", fontWeight: 400 }}>
+          <span className="grafico-rango">
             {fmtDia(puntos[0].fecha)} → {fmtDia(puntos[n - 1].fecha)} · Total: {totalPeriodo}
           </span>
           <i className={`bx ${abierto ? "bx-chevron-up" : "bx-chevron-down"}`} style={{ fontSize: 20 }} />
@@ -116,7 +125,8 @@ export default function GraficoPostulaciones({ postulantes }) {
       </button>
 
       {!abierto ? null : (
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ height: "auto", display: "block", marginTop: 8 }} role="img"
+      <div className="grafico-scroll">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ height: "auto", display: "block", marginTop: 8, minWidth: mobile ? W : undefined }} role="img"
         aria-label="Postulaciones por día" preserveAspectRatio="none">
         <defs>
           <linearGradient id="gradArea" x1="0" y1="0" x2="0" y2="1">
@@ -180,6 +190,7 @@ export default function GraficoPostulaciones({ postulantes }) {
           ) : null
         )}
       </svg>
+      </div>
       )}
     </div>
   );

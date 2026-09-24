@@ -14,9 +14,9 @@ export default function Confirmacion() {
 
       <section className="card-form">
         <div className="d-flex align-items-center mb-3" style={{ gap: 12 }}>
-          <i className="bx bx-check-circle" style={{ fontSize: 40, color: "#2e7d32" }} />
+          <i className="bx bx-check-circle" style={{ fontSize: 40, color: "#2e7d32", flexShrink: 0 }} />
           <div>
-            <h2 style={{ margin: 0, color: "var(--gcba-azul)" }}>
+            <h2 className="confirmacion-titulo">
               Preinscripción registrada{id ? ` — N° ${id}` : ""}
             </h2>
             {email && (
@@ -38,7 +38,8 @@ export default function Confirmacion() {
           <li>
             Recordá acudir con la documentación necesaria para la <strong>inscripción</strong>. El detalle lo
             podés ver en el siguiente link:{" "}
-            <a href="https://www.buenosaires.gob.ar/salud/recursos-humanos" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.buenosaires.gob.ar/salud/recursos-humanos" target="_blank" rel="noopener noreferrer"
+              style={{ overflowWrap: "anywhere" }}>
               https://www.buenosaires.gob.ar/salud/recursos-humanos
             </a>{" "}
             (detalle de información general en la página).

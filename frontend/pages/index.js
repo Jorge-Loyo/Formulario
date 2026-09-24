@@ -158,12 +158,12 @@ export default function FormularioInscripcion() {
               <input className={`form-control ${invalido("nombre") ? "is-invalid" : ""}`}
                 value={form.nombre} onChange={(e) => set("nombre", e.target.value)} />
             </div>
-            <div className="col-md-3 mb-3">
+            <div className="col-6 col-md-3 mb-3">
               <Label>DNI</Label>
               <input className={`form-control ${invalido("dni") ? "is-invalid" : ""}`}
                 value={form.dni} onChange={(e) => set("dni", e.target.value)} />
             </div>
-            <div className="col-md-3 mb-3">
+            <div className="col-6 col-md-3 mb-3">
               <Label>CUIL</Label>
               <input className={`form-control ${invalido("cuil") ? "is-invalid" : ""}`}
                 inputMode="numeric" maxLength={11}
@@ -406,7 +406,7 @@ export default function FormularioInscripcion() {
           </div>
         </section>
 
-        <div className="d-flex justify-content-end">
+        <div className="d-flex justify-content-end form-actions">
           <button type="submit" className="btn btn-primary btn-lg" disabled={enviando}>
             {enviando ? "Enviando..." : "Enviar inscripción"}
           </button>
@@ -471,24 +471,24 @@ function DomicilioCampos({ prefijo, form, set, invalido, disabled = false, provi
         <span className="form-hint">Escribí parte del nombre y elegí la calle de la lista.</span>
       </div>
 
-      <div className="col-md-3 mb-3">
+      <div className="col-6 col-md-3 mb-3">
         <Label>Número</Label>
         <input className={`form-control ${invalido(c("numero")) ? "is-invalid" : ""}`} disabled={disabled}
           value={form[c("numero")]} onChange={(e) => set(c("numero"), e.target.value)} />
       </div>
-      <div className="col-md-3 mb-3">
+      <div className="col-6 col-md-3 mb-3">
         <label className="form-label">Piso/Depto</label>
         <input className="form-control" disabled={disabled}
           value={form[c("piso_depto")]} onChange={(e) => set(c("piso_depto"), e.target.value)} />
       </div>
-      <div className="col-md-3 mb-3">
+      <div className="col-6 col-md-3 mb-3">
         <Label>Código Postal</Label>
         <input className={`form-control ${invalido(c("codigo_postal")) ? "is-invalid" : ""}`} disabled={disabled}
           inputMode="numeric" maxLength={10}
           value={form[c("codigo_postal")]}
           onChange={(e) => set(c("codigo_postal"), e.target.value.replace(/\D/g, ""))} />
       </div>
-      <div className="col-md-3 mb-3">
+      <div className="col-6 col-md-3 mb-3">
         <Label>Localidad</Label>
         {provinciaFija ? (
           <input className="form-control" value="CABA" readOnly disabled />
