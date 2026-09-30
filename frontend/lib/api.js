@@ -12,10 +12,14 @@ export function guardarSesion({ token, usuario, rol }) {
   sessionStorage.setItem(ROL_KEY, rol);
 }
 export function getToken() {
-  return typeof window !== "undefined" ? sessionStorage.getItem(TOKEN_KEY) : null;
+  return typeof window !== "undefined"
+    ? sessionStorage.getItem(TOKEN_KEY)
+    : null;
 }
 export function getUsuario() {
-  return typeof window !== "undefined" ? sessionStorage.getItem(USER_KEY) : null;
+  return typeof window !== "undefined"
+    ? sessionStorage.getItem(USER_KEY)
+    : null;
 }
 export function getRol() {
   return typeof window !== "undefined" ? sessionStorage.getItem(ROL_KEY) : null;
@@ -37,7 +41,11 @@ async function manejarError(res, defecto) {
   let detalle = defecto;
   try {
     const err = await res.json();
-    if (err.detail) detalle = typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail);
+    if (err.detail)
+      detalle =
+        typeof err.detail === "string"
+          ? err.detail
+          : JSON.stringify(err.detail);
   } catch (_) {}
   throw new Error(detalle);
 }
@@ -74,7 +82,9 @@ export async function listarPostulantes(q) {
 }
 
 export async function obtenerPostulante(id) {
-  const res = await fetch(`${API_URL}/admin/postulantes/${id}`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/admin/postulantes/${id}`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "No se pudo obtener el postulante.");
   return res.json();
 }
@@ -90,7 +100,9 @@ export async function editarPostulante(id, datos) {
 }
 
 export async function descargarPdf(id) {
-  const res = await fetch(`${API_URL}/admin/postulantes/${id}/pdf`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/admin/postulantes/${id}/pdf`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "No se pudo generar el PDF.");
   return res.blob();
 }
@@ -106,7 +118,9 @@ export async function validarPostulante(id) {
 
 // ---- Developer: usuarios ----
 export async function listarUsuarios() {
-  const res = await fetch(`${API_URL}/developer/usuarios`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/developer/usuarios`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "Error al obtener usuarios.");
   return res.json();
 }
@@ -146,5 +160,26 @@ export async function listarValidadas(q) {
   if (q) url.searchParams.set("q", q);
   const res = await fetch(url.toString(), { headers: bearer() });
   if (!res.ok) await manejarError(res, "Error al obtener las validadas.");
+  return res.json();
+}
+
+// ---- Developer: notificaciones ----
+export async function listarNotificaciones() {
+  const res = await fetch(`${API_URL}/developer/notificaciones`, {
+    headers: bearer(),
+  });
+  if (!res.ok) await manejarError(res, "Error al obtener las notificaciones.");
+  return res.json();
+}
+
+export async function enviarNotificacion(clave) {
+  const res = await fetch(
+    `${API_URL}/developer/notificaciones/${clave}/enviar`,
+    {
+      method: "POST",
+      headers: bearer(),
+    },
+  );
+  if (!res.ok) await manejarError(res, "No se pudo enviar la notificación.");
   return res.json();
 }

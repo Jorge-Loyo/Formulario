@@ -13,6 +13,8 @@ import {
   listarLogs,
   listarValidadas,
   validarPostulante,
+  listarNotificaciones,
+  enviarNotificacion,
 } from "@/lib/api";
 
 export default function Developer() {
@@ -131,6 +133,14 @@ export default function Developer() {
         </li>
         <li className="nav-item">
           <button
+            className={`nav-link ${tab === "notificaciones" ? "active" : ""}`}
+            onClick={() => setTab("notificaciones")}
+          >
+            Notificaciones
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
             className={`nav-link ${tab === "logs" ? "active" : ""}`}
             onClick={() => setTab("logs")}
           >
@@ -141,6 +151,7 @@ export default function Developer() {
 
       {tab === "usuarios" && <Usuarios onExpira={logout} />}
       {tab === "validadas" && <Validadas onExpira={logout} />}
+      {tab === "notificaciones" && <Notificaciones onExpira={logout} />}
       {tab === "logs" && <Logs onExpira={logout} />}
     </>
   );
@@ -446,6 +457,87 @@ function Validadas({ onExpira }) {
       </table>
       </div>
       <p className="form-hint">Total validadas: {lista.length}</p>
+    </section>
+  );
+}
+
+// ------------------ Notificaciones ------------------
+function Notificaciones({ onExpira }) {
+  const [lista, setLista] = useState([]);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState("");
+
+  async function cargar() {
+    setError("");
+    try {
+      setLista(await listarNotificaciones());
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError("No se pudieron cargar las notificaciones.");
+    }
+  }
+  useEffect(() => {
+    cargar(); /* eslint-disable-next-line */
+  }, []);
+
+  async function enviar(n) {
+    if (!confirm(
+      `Vas a enviar "${n.titulo}" a ${n.destinatarios} destinatario(s).\n\n` +
+      `Esta acción envía correos reales. ¿Confirmás?`
+    )) return;
+    setError("");
+    setMensaje("");
+    setEnviando(n.clave);
+    try {
+      const r = await enviarNotificacion(n.clave);
+      setMensaje(`Notificación "${n.titulo}": enviados ${r.enviados}, fallidos ${r.fallidos} (total ${r.total}).`);
+      cargar();
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError(e.message || "No se pudo enviar la notificación.");
+    } finally {
+      setEnviando("");
+    }
+  }
+
+  return (
+    <section className="card-form">
+      <h2 className="section-title">Notificaciones</h2>
+      {mensaje && <div className="alert alert-success">{mensaje}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {lista.length === 0 ? (
+        <p className="text-muted">No hay notificaciones configuradas.</p>
+      ) : (
+        lista.map((n) => (
+          <div key={n.clave} className="border rounded p-3 mb-3">
+            <div className="d-flex justify-content-between align-items-start flex-wrap" style={{ gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <h3 style={{ fontSize: 17, color: "var(--gcba-azul)", margin: "0 0 4px" }}>{n.titulo}</h3>
+                <p className="mb-1" style={{ fontSize: 14 }}>{n.descripcion}</p>
+                <p className="mb-1" style={{ fontSize: 13, color: "#5a6672" }}>
+                  <strong>Asunto:</strong> {n.asunto}
+                </p>
+                <p className="mb-0" style={{ fontSize: 13, color: "#5a6672" }}>
+                  <strong>Destinatarios:</strong> {n.destinatarios} (preinscriptos no validados)
+                </p>
+              </div>
+              <button
+                className="btn btn-primary"
+                disabled={enviando === n.clave || n.destinatarios === 0}
+                onClick={() => enviar(n)}
+              >
+                <i className="bx bx-envelope" />{" "}
+                {enviando === n.clave ? "Enviando…" : `Enviar (${n.destinatarios})`}
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+      <p className="form-hint">
+        El envío usa el correo institucional configurado y registra la acción en la auditoría.
+      </p>
     </section>
   );
 }

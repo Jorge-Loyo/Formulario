@@ -14,6 +14,7 @@ from .config import settings
 from .database import Base, engine, get_db, SessionLocal
 from .email_service import enviar_email_postulante
 from .pdf import generar_pdf_postulante
+from . import notificaciones as notif
 
 # Crea las tablas si no existen (para prod se recomienda migraciones con Alembic)
 Base.metadata.create_all(bind=engine)
@@ -334,3 +335,43 @@ def listar_validadas(
             models.Postulante.email.ilike(like),
         ))
     return db.execute(stmt).scalars().all()
+
+
+@app.get("/developer/notificaciones", response_model=list[schemas.NotificacionOut])
+def listar_notificaciones(
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Lista las notificaciones disponibles y cuántos destinatarios tendría cada una."""
+    salida = []
+    for clave, n in notif.NOTIFICACIONES.items():
+        salida.append(schemas.NotificacionOut(
+            clave=n.clave, titulo=n.titulo, descripcion=n.descripcion,
+            asunto=n.asunto, grupo=n.grupo,
+            destinatarios=notif.contar_destinatarios(db, clave),
+        ))
+    return salida
+
+
+@app.post("/developer/notificaciones/{clave}/enviar", response_model=schemas.EnvioNotificacionResponse)
+def enviar_notificacion(
+    clave: str,
+    dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Envía la notificación a su grupo y registra el envío en auditoría."""
+    if clave not in notif.NOTIFICACIONES:
+        raise HTTPException(status_code=404, detail="Notificación desconocida")
+
+    resumen = notif.enviar_notificacion(db, clave)
+
+    db.add(models.Auditoria(
+        entidad="notificacion", entidad_id=0, accion="enviar_notificacion",
+        campo=clave,
+        valor_anterior="",
+        valor_nuevo=f"enviados={resumen['enviados']} fallidos={resumen['fallidos']} total={resumen['total']}",
+        usuario=dev.usuario,
+    ))
+    db.commit()
+
+    return schemas.EnvioNotificacionResponse(**resumen)

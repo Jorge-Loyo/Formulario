@@ -115,6 +115,23 @@ class UsuarioOut(BaseModel):
     creado_en: datetime
 
 
+# --- Notificaciones ---
+class NotificacionOut(BaseModel):
+    clave: str
+    titulo: str
+    descripcion: str
+    asunto: str
+    grupo: str
+    destinatarios: int
+
+
+class EnvioNotificacionResponse(BaseModel):
+    clave: str
+    total: int
+    enviados: int
+    fallidos: int
+
+
 # --- Auditoría ---
 class AuditoriaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
