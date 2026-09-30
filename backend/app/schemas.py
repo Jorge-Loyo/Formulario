@@ -123,6 +123,11 @@ class NotificacionOut(BaseModel):
     asunto: str
     grupo: str
     destinatarios: int
+    cuerpo: str = ""
+
+
+class NotificacionUpdate(BaseModel):
+    cuerpo: str = Field(min_length=1)
 
 
 class EnvioNotificacionResponse(BaseModel):

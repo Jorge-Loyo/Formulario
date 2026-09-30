@@ -81,6 +81,17 @@ class Usuario(Base):
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class NotificacionContenido(Base):
+    """Cuerpo editable de cada notificación (el saludo y la firma son fijos)."""
+    __tablename__ = "notificacion_contenido"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    clave: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    cuerpo: Mapped[str] = mapped_column(Text, default="")
+    actualizado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    actualizado_por: Mapped[str] = mapped_column(String(80), default="")
+
+
 class Auditoria(Base):
     """Registro de cambios realizados desde el panel (no incluye cargas públicas)."""
     __tablename__ = "auditoria"

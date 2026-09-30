@@ -349,8 +349,37 @@ def listar_notificaciones(
             clave=n.clave, titulo=n.titulo, descripcion=n.descripcion,
             asunto=n.asunto, grupo=n.grupo,
             destinatarios=notif.contar_destinatarios(db, clave),
+            cuerpo=notif.obtener_cuerpo(db, clave),
         ))
     return salida
+
+
+@app.put("/developer/notificaciones/{clave}", response_model=schemas.NotificacionOut)
+def editar_notificacion(
+    clave: str,
+    payload: schemas.NotificacionUpdate,
+    dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Edita el cuerpo (texto editable) de una notificación. Saludo y asunto son fijos."""
+    n = notif.NOTIFICACIONES.get(clave)
+    if n is None:
+        raise HTTPException(status_code=404, detail="Notificación desconocida")
+
+    notif.guardar_cuerpo(db, clave, payload.cuerpo, dev.usuario)
+    db.add(models.Auditoria(
+        entidad="notificacion", entidad_id=0, accion="editar_notificacion",
+        campo=clave, valor_anterior="", valor_nuevo="cuerpo actualizado",
+        usuario=dev.usuario,
+    ))
+    db.commit()
+
+    return schemas.NotificacionOut(
+        clave=n.clave, titulo=n.titulo, descripcion=n.descripcion,
+        asunto=n.asunto, grupo=n.grupo,
+        destinatarios=notif.contar_destinatarios(db, clave),
+        cuerpo=notif.obtener_cuerpo(db, clave),
+    )
 
 
 @app.post("/developer/notificaciones/{clave}/enviar", response_model=schemas.EnvioNotificacionResponse)

@@ -183,3 +183,13 @@ export async function enviarNotificacion(clave) {
   if (!res.ok) await manejarError(res, "No se pudo enviar la notificación.");
   return res.json();
 }
+
+export async function editarNotificacion(clave, cuerpo) {
+  const res = await fetch(`${API_URL}/developer/notificaciones/${clave}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ cuerpo }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo guardar el mensaje.");
+  return res.json();
+}

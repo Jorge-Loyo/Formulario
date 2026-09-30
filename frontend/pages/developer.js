@@ -15,6 +15,7 @@ import {
   validarPostulante,
   listarNotificaciones,
   enviarNotificacion,
+  editarNotificacion,
 } from "@/lib/api";
 
 export default function Developer() {
@@ -467,6 +468,9 @@ function Notificaciones({ onExpira }) {
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState("");
+  const [editando, setEditando] = useState("");   // clave que se está editando
+  const [borrador, setBorrador] = useState("");    // texto del cuerpo en edición
+  const [guardando, setGuardando] = useState(false);
 
   async function cargar() {
     setError("");
@@ -501,6 +505,30 @@ function Notificaciones({ onExpira }) {
     }
   }
 
+  function empezarEdicion(n) {
+    setEditando(n.clave);
+    setBorrador(n.cuerpo || "");
+    setMensaje("");
+    setError("");
+  }
+
+  async function guardarEdicion(n) {
+    if (!borrador.trim()) { setError("El mensaje no puede quedar vacío."); return; }
+    setGuardando(true);
+    setError("");
+    try {
+      await editarNotificacion(n.clave, borrador);
+      setMensaje("Mensaje actualizado correctamente.");
+      setEditando("");
+      cargar();
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError(e.message || "No se pudo guardar el mensaje.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <section className="card-form">
       <h2 className="section-title">Notificaciones</h2>
@@ -523,14 +551,59 @@ function Notificaciones({ onExpira }) {
                   <strong>Destinatarios:</strong> {n.destinatarios} (preinscriptos no validados)
                 </p>
               </div>
-              <button
-                className="btn btn-primary"
-                disabled={enviando === n.clave || n.destinatarios === 0}
-                onClick={() => enviar(n)}
-              >
-                <i className="bx bx-envelope" />{" "}
-                {enviando === n.clave ? "Enviando…" : `Enviar (${n.destinatarios})`}
-              </button>
+              <div className="d-flex" style={{ gap: 8 }}>
+                {editando !== n.clave && (
+                  <button className="btn btn-outline-secondary" onClick={() => empezarEdicion(n)}>
+                    <i className="bx bx-edit" /> Editar mensaje
+                  </button>
+                )}
+                <button
+                  className="btn btn-primary"
+                  disabled={enviando === n.clave || n.destinatarios === 0}
+                  onClick={() => enviar(n)}
+                >
+                  <i className="bx bx-envelope" />{" "}
+                  {enviando === n.clave ? "Enviando…" : `Enviar (${n.destinatarios})`}
+                </button>
+              </div>
+            </div>
+
+            {/* Vista previa / edición del cuerpo */}
+            <div className="mt-3" style={{ background: "#f7f9fa", borderRadius: 8, padding: 14 }}>
+              <p style={{ margin: "0 0 8px", fontWeight: 600 }}>Hola [Nombre Apellido]!</p>
+              {editando === n.clave ? (
+                <>
+                  <textarea
+                    className="form-control"
+                    rows={7}
+                    value={borrador}
+                    onChange={(e) => setBorrador(e.target.value)}
+                  />
+                  <p className="form-hint mt-1">
+                    Separá párrafos con una línea en blanco. El saludo y la firma no se editan.
+                  </p>
+                </>
+              ) : (
+                <div style={{ whiteSpace: "pre-line", fontSize: 14, color: "#333" }}>{n.cuerpo}</div>
+              )}
+              <div style={{ marginTop: 10, color: "#5a6672", fontSize: 13, borderTop: "1px solid #e2e7ec", paddingTop: 8 }}>
+                <p style={{ margin: 0 }}>Saludos,</p>
+                <p style={{ margin: 0 }}>-</p>
+                <p style={{ margin: 0 }}>Dirección General de Administración y Desarrollo de Recursos Humanos</p>
+                <p style={{ margin: 0 }}>Ministerio de Salud</p>
+                <p style={{ margin: 0 }}>GCBA</p>
+              </div>
+
+              {editando === n.clave && (
+                <div className="d-flex justify-content-end mt-3" style={{ gap: 8 }}>
+                  <button className="btn btn-outline-secondary" onClick={() => setEditando("")} disabled={guardando}>
+                    Cancelar
+                  </button>
+                  <button className="btn btn-success" onClick={() => guardarEdicion(n)} disabled={guardando}>
+                    {guardando ? "Guardando…" : "Guardar mensaje"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))
