@@ -34,9 +34,28 @@ app.add_middleware(
 )
 
 
+CLAVE_INSCRIPCIONES = "inscripciones_abiertas"
+
+
+def _inscripciones_abiertas(db: Session) -> bool:
+    """Lee el flag de inscripciones. Por defecto: abiertas (si no hay registro)."""
+    reg = db.execute(
+        select(models.Configuracion).where(models.Configuracion.clave == CLAVE_INSCRIPCIONES)
+    ).scalar_one_or_none()
+    if reg is None:
+        return True
+    return reg.valor == "true"
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/inscripciones/estado", response_model=schemas.EstadoInscripciones)
+def estado_inscripciones(db: Session = Depends(get_db)):
+    """Público: indica si las inscripciones están abiertas (para el formulario)."""
+    return schemas.EstadoInscripciones(abiertas=_inscripciones_abiertas(db))
 
 
 @app.post("/auth/login", response_model=schemas.LoginResponse)
@@ -57,6 +76,10 @@ def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
 @app.post("/inscripciones", response_model=schemas.InscripcionResponse, status_code=201)
 def crear_inscripcion(payload: schemas.PostulanteCreate, db: Session = Depends(get_db)):
     """Pantalla 1: recibe el formulario, guarda al postulante y le envía el email."""
+    # Rechazar si las inscripciones están cerradas (control del lado del servidor).
+    if not _inscripciones_abiertas(db):
+        raise HTTPException(status_code=403, detail="Las inscripciones al concurso han finalizado.")
+
     datos = payload.model_dump()
     # Título fijo — forzado en el servidor, no depende del cliente.
     datos["titulo"] = "Licenciado en Psicología"
@@ -404,3 +427,46 @@ def enviar_notificacion(
     db.commit()
 
     return schemas.EnvioNotificacionResponse(**resumen)
+
+
+# =========================================================================
+# Configuración: abrir / cerrar inscripciones (solo developer)
+# =========================================================================
+
+@app.get("/developer/inscripciones/estado", response_model=schemas.EstadoInscripciones)
+def developer_estado_inscripciones(
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    return schemas.EstadoInscripciones(abiertas=_inscripciones_abiertas(db))
+
+
+@app.put("/developer/inscripciones/estado", response_model=schemas.EstadoInscripciones)
+def cambiar_estado_inscripciones(
+    payload: schemas.EstadoInscripciones,
+    dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Abre o cierra las inscripciones y registra el cambio en auditoría."""
+    from datetime import datetime as _dt
+    estado_anterior = _inscripciones_abiertas(db)
+    reg = db.execute(
+        select(models.Configuracion).where(models.Configuracion.clave == CLAVE_INSCRIPCIONES)
+    ).scalar_one_or_none()
+    if reg is None:
+        reg = models.Configuracion(clave=CLAVE_INSCRIPCIONES)
+        db.add(reg)
+    reg.valor = "true" if payload.abiertas else "false"
+    reg.actualizado_en = _dt.utcnow()
+    reg.actualizado_por = dev.usuario
+
+    db.add(models.Auditoria(
+        entidad="configuracion", entidad_id=0,
+        accion="abrir_inscripciones" if payload.abiertas else "cerrar_inscripciones",
+        campo=CLAVE_INSCRIPCIONES,
+        valor_anterior="abiertas" if estado_anterior else "cerradas",
+        valor_nuevo="abiertas" if payload.abiertas else "cerradas",
+        usuario=dev.usuario,
+    ))
+    db.commit()
+    return schemas.EstadoInscripciones(abiertas=payload.abiertas)

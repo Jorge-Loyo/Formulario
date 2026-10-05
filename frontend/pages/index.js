@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
-import { crearInscripcion } from "@/lib/api";
+import { crearInscripcion, estadoInscripciones } from "@/lib/api";
 import { PROVINCIAS, SEXOS, TIPOS_DOCUMENTO, TITULO_FIJO, NACIONALIDADES, PROVINCIA_IDS } from "@/lib/constants";
 import AutocompleteDireccion from "@/components/AutocompleteDireccion";
 
@@ -46,6 +46,14 @@ export default function FormularioInscripcion() {
   const [declaracion, setDeclaracion] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorGlobal, setErrorGlobal] = useState("");
+  const [abiertas, setAbiertas] = useState(null); // null = cargando, true/false = estado
+
+  // Consultar al cargar si las inscripciones están abiertas.
+  useEffect(() => {
+    estadoInscripciones()
+      .then((r) => setAbiertas(r.abiertas))
+      .catch(() => setAbiertas(true)); // ante error, no bloquear el formulario
+  }, []);
 
   const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -125,6 +133,37 @@ export default function FormularioInscripcion() {
   }
 
   const invalido = (campo) => enviando === false && errorGlobal && !String(form[campo]).trim();
+
+  // Mientras consulta el estado, no muestra nada aún.
+  if (abiertas === null) {
+    return (
+      <div className="hero">
+        <h1>Formulario de Preinscripción</h1>
+        <p>Cargando…</p>
+      </div>
+    );
+  }
+
+  // Inscripciones cerradas: mensaje en lugar del formulario.
+  if (abiertas === false) {
+    return (
+      <>
+        <div className="hero">
+          <h1>Preinscripción a Concurso Público</h1>
+          <p style={{ lineHeight: 1.6 }}>Puesto a cubrir: Psicólogo de Planta</p>
+        </div>
+        <section className="card-form" style={{ textAlign: "center", padding: "48px 28px" }}>
+          <i className="bx bx-time-five" style={{ fontSize: 56, color: "var(--gcba-azul)" }} />
+          <h2 style={{ color: "var(--gcba-azul)", marginTop: 12 }}>
+            Las inscripciones al concurso han finalizado
+          </h2>
+          <p style={{ fontSize: 16, color: "#5a6672", maxWidth: 520, margin: "8px auto 0" }}>
+            Gracias por tu interés. El período de preinscripción se encuentra cerrado.
+          </p>
+        </section>
+      </>
+    );
+  }
 
   return (
     <>

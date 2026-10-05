@@ -16,6 +16,8 @@ import {
   listarNotificaciones,
   enviarNotificacion,
   editarNotificacion,
+  obtenerEstadoInscripciones,
+  cambiarEstadoInscripciones,
 } from "@/lib/api";
 
 export default function Developer() {
@@ -142,6 +144,14 @@ export default function Developer() {
         </li>
         <li className="nav-item">
           <button
+            className={`nav-link ${tab === "configuracion" ? "active" : ""}`}
+            onClick={() => setTab("configuracion")}
+          >
+            Configuración
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
             className={`nav-link ${tab === "logs" ? "active" : ""}`}
             onClick={() => setTab("logs")}
           >
@@ -153,6 +163,7 @@ export default function Developer() {
       {tab === "usuarios" && <Usuarios onExpira={logout} />}
       {tab === "validadas" && <Validadas onExpira={logout} />}
       {tab === "notificaciones" && <Notificaciones onExpira={logout} />}
+      {tab === "configuracion" && <Configuracion onExpira={logout} />}
       {tab === "logs" && <Logs onExpira={logout} />}
     </>
   );
@@ -611,6 +622,94 @@ function Notificaciones({ onExpira }) {
       <p className="form-hint">
         El envío usa el correo institucional configurado y registra la acción en la auditoría.
       </p>
+    </section>
+  );
+}
+
+// ------------------ Configuración ------------------
+function Configuracion({ onExpira }) {
+  const [abiertas, setAbiertas] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [procesando, setProcesando] = useState(false);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  async function cargar() {
+    setError("");
+    try {
+      const r = await obtenerEstadoInscripciones();
+      setAbiertas(r.abiertas);
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError("No se pudo obtener el estado.");
+    } finally {
+      setCargando(false);
+    }
+  }
+  useEffect(() => {
+    cargar(); /* eslint-disable-next-line */
+  }, []);
+
+  async function cambiar(nuevoEstado) {
+    const accion = nuevoEstado ? "REABRIR" : "CERRAR";
+    if (!confirm(
+      `¿Confirmás ${accion} las inscripciones?\n\n` +
+      (nuevoEstado
+        ? "El formulario público volverá a estar disponible."
+        : "El formulario público dejará de aceptar nuevas preinscripciones y mostrará un aviso de cierre.")
+    )) return;
+    setProcesando(true);
+    setError("");
+    setMensaje("");
+    try {
+      const r = await cambiarEstadoInscripciones(nuevoEstado);
+      setAbiertas(r.abiertas);
+      setMensaje(nuevoEstado ? "Inscripciones reabiertas." : "Inscripciones cerradas.");
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError(e.message || "No se pudo cambiar el estado.");
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  return (
+    <section className="card-form">
+      <h2 className="section-title">Configuración</h2>
+      {mensaje && <div className="alert alert-success">{mensaje}</div>}
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="border rounded p-3">
+        <h3 style={{ fontSize: 17, color: "var(--gcba-azul)", margin: "0 0 6px" }}>
+          Estado de las inscripciones
+        </h3>
+        {cargando ? (
+          <p className="text-muted mb-0">Cargando…</p>
+        ) : (
+          <>
+            <p className="mb-3">
+              Estado actual:{" "}
+              {abiertas ? (
+                <span className="badge" style={{ background: "#2e7d32", color: "#fff" }}>Abiertas</span>
+              ) : (
+                <span className="badge" style={{ background: "#c1121f", color: "#fff" }}>Cerradas</span>
+              )}
+            </p>
+            {abiertas ? (
+              <button className="btn btn-danger" disabled={procesando} onClick={() => cambiar(false)}>
+                <i className="bx bx-lock-alt" /> {procesando ? "Procesando…" : "Cerrar inscripciones"}
+              </button>
+            ) : (
+              <button className="btn btn-success" disabled={procesando} onClick={() => cambiar(true)}>
+                <i className="bx bx-lock-open-alt" /> {procesando ? "Procesando…" : "Reabrir inscripciones"}
+              </button>
+            )}
+            <p className="form-hint mt-2">
+              Al cerrar, el formulario público muestra &quot;Las inscripciones al concurso han finalizado&quot;.
+            </p>
+          </>
+        )}
+      </div>
     </section>
   );
 }

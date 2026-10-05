@@ -51,6 +51,12 @@ async function manejarError(res, defecto) {
 }
 
 // ---- Público ----
+export async function estadoInscripciones() {
+  const res = await fetch(`${API_URL}/inscripciones/estado`);
+  if (!res.ok) throw new Error("No se pudo consultar el estado.");
+  return res.json(); // { abiertas: boolean }
+}
+
 export async function crearInscripcion(datos) {
   const res = await fetch(`${API_URL}/inscripciones`, {
     method: "POST",
@@ -191,5 +197,22 @@ export async function editarNotificacion(clave, cuerpo) {
     body: JSON.stringify({ cuerpo }),
   });
   if (!res.ok) await manejarError(res, "No se pudo guardar el mensaje.");
+  return res.json();
+}
+
+// ---- Developer: estado de inscripciones ----
+export async function obtenerEstadoInscripciones() {
+  const res = await fetch(`${API_URL}/developer/inscripciones/estado`, { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudo obtener el estado.");
+  return res.json();
+}
+
+export async function cambiarEstadoInscripciones(abiertas) {
+  const res = await fetch(`${API_URL}/developer/inscripciones/estado`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ abiertas }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo cambiar el estado.");
   return res.json();
 }

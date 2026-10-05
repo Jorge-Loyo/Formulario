@@ -81,6 +81,17 @@ class Usuario(Base):
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class Configuracion(Base):
+    """Configuración global del sistema (clave/valor). Ej: inscripciones abiertas."""
+    __tablename__ = "configuracion"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    clave: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    valor: Mapped[str] = mapped_column(String(255), default="")
+    actualizado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    actualizado_por: Mapped[str] = mapped_column(String(80), default="")
+
+
 class NotificacionContenido(Base):
     """Cuerpo editable de cada notificación (el saludo y la firma son fijos)."""
     __tablename__ = "notificacion_contenido"

@@ -115,6 +115,11 @@ class UsuarioOut(BaseModel):
     creado_en: datetime
 
 
+# --- Configuración ---
+class EstadoInscripciones(BaseModel):
+    abiertas: bool
+
+
 # --- Notificaciones ---
 class NotificacionOut(BaseModel):
     clave: str
