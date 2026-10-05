@@ -43,6 +43,11 @@ CUERPO_DEFECTO = {
         "{fecha_examen}\n\n"
         "Te esperamos. Ante cualquier duda, podés comunicarte con la Dirección."
     ),
+    "mail-no-admitido": (
+        "Lamentamos informarte que, tras la revisión de la documentación presentada, tu inscripción "
+        "no fue admitida para la presente instancia del concurso de Psicólogo/a de Planta.\n\n"
+        "Agradecemos tu participación y te invitamos a estar atento/a a futuras convocatorias."
+    ),
 }
 
 
@@ -204,3 +209,22 @@ def enviar_mail_examen(db: Session, admitidos, fecha_examen: str) -> dict:
         else:
             fallidos += 1
     return {"total": len(admitidos), "enviados": enviados, "fallidos": fallidos}
+
+
+ASUNTO_NO_ADMITIDO = "Resultado de admisión — Concurso Público Psicólogo/a de Planta"
+
+
+def enviar_mail_no_admitido(db: Session, no_admitidos) -> dict:
+    """Envía el correo de 'no admitido' a cada postulante de la lista (individual)."""
+    cuerpo = obtener_cuerpo(db, "mail-no-admitido")
+    enviados = 0
+    fallidos = 0
+    for p in no_admitidos:
+        nombre_completo = f"{p.nombre} {p.apellido}".strip()
+        html = _armar_html(cuerpo, nombre_completo)
+        ok = _enviar_email(p.email, ASUNTO_NO_ADMITIDO, html)
+        if ok:
+            enviados += 1
+        else:
+            fallidos += 1
+    return {"total": len(no_admitidos), "enviados": enviados, "fallidos": fallidos}

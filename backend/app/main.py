@@ -2,7 +2,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, func
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -372,9 +372,17 @@ def estado_etapas(
     db: Session = Depends(get_db),
 ):
     """Estado de las etapas para el panel admin."""
+    no_admitidos_pendientes = db.execute(
+        select(func.count()).select_from(models.Postulante).where(
+            models.Postulante.validado == True,                 # noqa: E712
+            models.Postulante.admitido == False,                # noqa: E712
+            models.Postulante.no_admitido_notificado == False,  # noqa: E712
+        )
+    ).scalar() or 0
     return {
         "inscripciones_abiertas": _inscripciones_abiertas(db),
         "admision_abierta": _admision_abierta(db),
+        "no_admitidos_pendientes": no_admitidos_pendientes,
     }
 
 
@@ -405,7 +413,11 @@ def admin_cambiar_admision(
     user: models.Usuario = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Abrir/cerrar la etapa de admisión desde el admin (pestaña Inscriptos)."""
+    """Abrir/cerrar la etapa de admisión desde el admin (pestaña Inscriptos).
+
+    Al CERRAR la admisión, se envía el correo de 'no admitido' a los validados
+    que no fueron admitidos y que todavía no fueron notificados.
+    """
     anterior = _admision_abierta(db)
     _guardar_flag(db, CLAVE_ADMISION, payload.abierta, user.usuario)
     db.add(models.Auditoria(
@@ -416,6 +428,28 @@ def admin_cambiar_admision(
         valor_nuevo="abierta" if payload.abierta else "cerrada",
         usuario=user.usuario,
     ))
+
+    resumen = None
+    if not payload.abierta:
+        # Cerrando la admisión: notificar a los NO admitidos pendientes.
+        no_admitidos = db.execute(
+            select(models.Postulante).where(
+                models.Postulante.validado == True,                 # noqa: E712
+                models.Postulante.admitido == False,                # noqa: E712
+                models.Postulante.no_admitido_notificado == False,  # noqa: E712
+            )
+        ).scalars().all()
+        if no_admitidos:
+            resumen = notif.enviar_mail_no_admitido(db, no_admitidos)
+            for p in no_admitidos:
+                p.no_admitido_notificado = True
+            db.add(models.Auditoria(
+                entidad="notificacion", entidad_id=0, accion="notificar_no_admitidos",
+                campo="mail-no-admitido", valor_anterior="",
+                valor_nuevo=f"enviados={resumen['enviados']} fallidos={resumen['fallidos']} total={resumen['total']}",
+                usuario=user.usuario,
+            ))
+
     db.commit()
     return schemas.EstadoAdmision(abierta=payload.abierta)
 
@@ -456,7 +490,7 @@ def obtener_mail(
     _user: models.Usuario = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    if clave not in ("mail-admision", "mail-examen"):
+    if clave not in ("mail-admision", "mail-examen", "mail-no-admitido"):
         raise HTTPException(status_code=404, detail="Mail desconocido")
     return {"clave": clave, "cuerpo": notif.obtener_cuerpo(db, clave)}
 
@@ -468,7 +502,7 @@ def editar_mail(
     user: models.Usuario = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    if clave not in ("mail-admision", "mail-examen"):
+    if clave not in ("mail-admision", "mail-examen", "mail-no-admitido"):
         raise HTTPException(status_code=404, detail="Mail desconocido")
     notif.guardar_cuerpo(db, clave, payload.cuerpo, user.usuario)
     db.add(models.Auditoria(

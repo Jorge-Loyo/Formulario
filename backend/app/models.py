@@ -73,6 +73,9 @@ class Postulante(Base):
     admitido_por: Mapped[str] = mapped_column(String(80), default="")
     admitido_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # Marca de que ya se le envió el correo de "no admitido" (evita reenvíos).
+    no_admitido_notificado: Mapped[bool] = mapped_column(Boolean, default=False)
+
 
 class Usuario(Base):
     """Usuarios del panel (roles: 'admin' o 'developer')."""

@@ -602,9 +602,17 @@ function Inscriptos({ etapas, onEtapas, onExpira }) {
   }
 
   async function cambiarAdmision(abierta) {
-    const txt = abierta
-      ? "¿Reabrir la etapa de admisión?"
-      : "¿Cerrar la etapa de admisión? Ya no se podrá admitir a nadie más y se habilitará el envío de la fecha de examen a los admitidos.";
+    let txt;
+    if (abierta) {
+      txt = "¿Reabrir la etapa de admisión?";
+    } else {
+      const n = etapas.no_admitidos_pendientes || 0;
+      txt =
+        "¿Cerrar la etapa de admisión?\n\n" +
+        `Se enviará el correo de NO ADMITIDO a ${n} inscripto(s) que no fueron admitidos.\n` +
+        "Esta acción envía correos reales y no se puede deshacer.\n\n" +
+        "Además, ya no se podrá admitir a nadie más y se habilitará el envío de la fecha de examen.\n\n¿Confirmás?";
+    }
     if (!confirm(txt)) return;
     try {
       await cambiarAdmisionAdmin(abierta);
@@ -675,6 +683,14 @@ function Inscriptos({ etapas, onEtapas, onExpira }) {
       <EditorMail
         clave="mail-admision"
         titulo="Correo de admisión (se envía al admitir)"
+        onExpira={onExpira}
+      />
+
+      {/* Editor del mail de NO admitido (se envía al cerrar la admisión) */}
+      <EditorMail
+        clave="mail-no-admitido"
+        titulo="Correo de NO admitido (se envía al cerrar la admisión)"
+        ayuda="Se envía automáticamente a los inscriptos que NO fueron admitidos, al cerrar la etapa de admisión."
         onExpira={onExpira}
       />
 
