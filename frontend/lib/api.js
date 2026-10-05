@@ -169,6 +169,12 @@ export async function listarValidadas(q) {
   return res.json();
 }
 
+export async function descargarValidadasExcel() {
+  const res = await fetch(`${API_URL}/developer/validadas/excel`, { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudo generar el Excel.");
+  return res.blob();
+}
+
 // ---- Developer: notificaciones ----
 export async function listarNotificaciones() {
   const res = await fetch(`${API_URL}/developer/notificaciones`, {

@@ -12,6 +12,7 @@ import {
   editarUsuario,
   listarLogs,
   listarValidadas,
+  descargarValidadasExcel,
   validarPostulante,
   listarNotificaciones,
   enviarNotificacion,
@@ -354,6 +355,7 @@ function Validadas({ onExpira }) {
   const [lista, setLista] = useState([]);
   const [q, setQ] = useState("");
   const [error, setError] = useState("");
+  const [descargando, setDescargando] = useState(false);
 
   async function cargar(busqueda = "") {
     setError("");
@@ -362,6 +364,27 @@ function Validadas({ onExpira }) {
     } catch (e) {
       if (e.message === "401" || e.message === "403") onExpira();
       else setError("No se pudieron cargar las validadas.");
+    }
+  }
+
+  async function exportarExcel() {
+    setDescargando(true);
+    setError("");
+    try {
+      const blob = await descargarValidadasExcel();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `inscripciones_validadas_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      if (e.message === "401" || e.message === "403") onExpira();
+      else setError("No se pudo descargar el Excel.");
+    } finally {
+      setDescargando(false);
     }
   }
   useEffect(() => {
@@ -381,7 +404,16 @@ function Validadas({ onExpira }) {
 
   return (
     <section className="card-form">
-      <h2 className="section-title">Preinscripciones validadas</h2>
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-2" style={{ gap: 10 }}>
+        <h2 className="section-title" style={{ marginBottom: 0 }}>Preinscripciones validadas</h2>
+        <button
+          className="btn btn-success"
+          onClick={exportarExcel}
+          disabled={descargando || lista.length === 0}
+        >
+          <i className="bx bx-download" /> {descargando ? "Generando…" : "Descargar Excel"}
+        </button>
+      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();

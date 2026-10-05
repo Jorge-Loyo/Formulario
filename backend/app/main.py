@@ -14,6 +14,7 @@ from .config import settings
 from .database import Base, engine, get_db, SessionLocal
 from .email_service import enviar_email_postulante
 from .pdf import generar_pdf_postulante
+from .excel import generar_excel_validadas
 from . import notificaciones as notif
 
 # Crea las tablas si no existen (para prod se recomienda migraciones con Alembic)
@@ -358,6 +359,28 @@ def listar_validadas(
             models.Postulante.email.ilike(like),
         ))
     return db.execute(stmt).scalars().all()
+
+
+@app.get("/developer/validadas/excel")
+def exportar_validadas_excel(
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Descarga un Excel (xlsx) con todas las inscripciones validadas."""
+    from datetime import datetime as _dt
+    validadas = db.execute(
+        select(models.Postulante)
+        .where(models.Postulante.validado == True)  # noqa: E712
+        .order_by(models.Postulante.validado_en.desc())
+    ).scalars().all()
+
+    contenido = generar_excel_validadas(validadas)
+    nombre = f"inscripciones_validadas_{_dt.now():%Y%m%d_%H%M}.xlsx"
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
 
 
 @app.get("/developer/notificaciones", response_model=list[schemas.NotificacionOut])
