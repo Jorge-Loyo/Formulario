@@ -489,13 +489,24 @@ function Postulados({ etapas, onEtapas, onExpira }) {
                             {p.validado ? "Validada" : "Validar"}
                           </span>
                         </button>
-                        <Link
-                          href={`/admin/editar/${p.id}`}
-                          className="btn btn-sm btn-outline-secondary"
-                        >
-                          <i className="bx bx-edit" />{" "}
-                          <span className="btn-label">Editar</span>
-                        </Link>
+                        {inscAbiertas ? (
+                          <Link
+                            href={`/admin/editar/${p.id}`}
+                            className="btn btn-sm btn-outline-secondary"
+                          >
+                            <i className="bx bx-edit" />{" "}
+                            <span className="btn-label">Editar</span>
+                          </Link>
+                        ) : (
+                          <button
+                            className="btn btn-sm btn-outline-secondary"
+                            disabled
+                            title="Inscripciones cerradas"
+                          >
+                            <i className="bx bx-edit" />{" "}
+                            <span className="btn-label">Editar</span>
+                          </button>
+                        )}
                         <button
                           className="btn btn-sm btn-outline-primary"
                           onClick={() => abrirPdf(p.id)}
