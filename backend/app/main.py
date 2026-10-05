@@ -36,16 +36,39 @@ app.add_middleware(
 
 
 CLAVE_INSCRIPCIONES = "inscripciones_abiertas"
+CLAVE_ADMISION = "admision_abierta"
+
+
+def _leer_flag(db: Session, clave: str, default: bool = True) -> bool:
+    reg = db.execute(
+        select(models.Configuracion).where(models.Configuracion.clave == clave)
+    ).scalar_one_or_none()
+    if reg is None:
+        return default
+    return reg.valor == "true"
+
+
+def _guardar_flag(db: Session, clave: str, valor: bool, usuario: str) -> None:
+    from datetime import datetime as _dt
+    reg = db.execute(
+        select(models.Configuracion).where(models.Configuracion.clave == clave)
+    ).scalar_one_or_none()
+    if reg is None:
+        reg = models.Configuracion(clave=clave)
+        db.add(reg)
+    reg.valor = "true" if valor else "false"
+    reg.actualizado_en = _dt.utcnow()
+    reg.actualizado_por = usuario
 
 
 def _inscripciones_abiertas(db: Session) -> bool:
     """Lee el flag de inscripciones. Por defecto: abiertas (si no hay registro)."""
-    reg = db.execute(
-        select(models.Configuracion).where(models.Configuracion.clave == CLAVE_INSCRIPCIONES)
-    ).scalar_one_or_none()
-    if reg is None:
-        return True
-    return reg.valor == "true"
+    return _leer_flag(db, CLAVE_INSCRIPCIONES, default=True)
+
+
+def _admision_abierta(db: Session) -> bool:
+    """Lee el flag de admisión. Por defecto: abierta (si no hay registro)."""
+    return _leer_flag(db, CLAVE_ADMISION, default=True)
 
 
 @app.get("/health")
@@ -223,6 +246,13 @@ def validar_postulante(
     if postulante is None:
         raise HTTPException(status_code=404, detail="Postulante no encontrado")
 
+    # Solo se puede validar mientras las inscripciones están abiertas.
+    if not _inscripciones_abiertas(db):
+        raise HTTPException(
+            status_code=403,
+            detail="Las inscripciones están cerradas: no se puede validar más postulantes.",
+        )
+
     nuevo_estado = not postulante.validado
     postulante.validado = nuevo_estado
     if nuevo_estado:
@@ -241,6 +271,206 @@ def validar_postulante(
     db.commit()
     db.refresh(postulante)
     return postulante
+
+
+# =========================================================================
+# Inscriptos / Admitidos / Etapas (admin)
+# =========================================================================
+
+@app.get("/admin/inscriptos", response_model=list[schemas.PostulanteOut])
+def listar_inscriptos(
+    q: str | None = Query(default=None),
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Validados que todavía NO fueron admitidos."""
+    stmt = select(models.Postulante).where(
+        models.Postulante.validado == True,   # noqa: E712
+        models.Postulante.admitido == False,  # noqa: E712
+    ).order_by(models.Postulante.validado_en.desc())
+    if q:
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(
+            models.Postulante.apellido.ilike(like),
+            models.Postulante.dni.ilike(like),
+            models.Postulante.cuil.ilike(like),
+            models.Postulante.email.ilike(like),
+        ))
+    return db.execute(stmt).scalars().all()
+
+
+@app.get("/admin/admitidos", response_model=list[schemas.PostulanteOut])
+def listar_admitidos(
+    q: str | None = Query(default=None),
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Postulantes admitidos."""
+    stmt = select(models.Postulante).where(
+        models.Postulante.admitido == True  # noqa: E712
+    ).order_by(models.Postulante.admitido_en.desc())
+    if q:
+        like = f"%{q.strip()}%"
+        stmt = stmt.where(or_(
+            models.Postulante.apellido.ilike(like),
+            models.Postulante.dni.ilike(like),
+            models.Postulante.cuil.ilike(like),
+            models.Postulante.email.ilike(like),
+        ))
+    return db.execute(stmt).scalars().all()
+
+
+@app.post("/admin/postulantes/{postulante_id}/admitir", response_model=schemas.PostulanteOut)
+def admitir_postulante(
+    postulante_id: int,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admite a un inscripto (no reversible) y le envía el correo de admisión.
+
+    Requiere: inscripciones cerradas y admisión abierta.
+    """
+    from datetime import datetime as _dt
+    postulante = db.get(models.Postulante, postulante_id)
+    if postulante is None:
+        raise HTTPException(status_code=404, detail="Postulante no encontrado")
+    if not postulante.validado:
+        raise HTTPException(status_code=400, detail="El postulante no está validado (inscripto).")
+    if postulante.admitido:
+        raise HTTPException(status_code=409, detail="El postulante ya fue admitido.")
+    if _inscripciones_abiertas(db):
+        raise HTTPException(status_code=403, detail="Primero deben cerrarse las inscripciones.")
+    if not _admision_abierta(db):
+        raise HTTPException(status_code=403, detail="La etapa de admisión está cerrada.")
+
+    postulante.admitido = True
+    postulante.admitido_por = user.usuario
+    postulante.admitido_en = _dt.utcnow()
+
+    email_ok = notif.enviar_mail_admision(db, postulante)
+
+    db.add(models.Auditoria(
+        entidad="postulante", entidad_id=postulante.id, accion="admitir",
+        campo="admitido", valor_anterior="False", valor_nuevo="True",
+        usuario=user.usuario,
+    ))
+    db.commit()
+    db.refresh(postulante)
+    return postulante
+
+
+@app.get("/admin/etapas")
+def estado_etapas(
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Estado de las etapas para el panel admin."""
+    return {
+        "inscripciones_abiertas": _inscripciones_abiertas(db),
+        "admision_abierta": _admision_abierta(db),
+    }
+
+
+@app.put("/admin/inscripciones/estado", response_model=schemas.EstadoInscripciones)
+def admin_cambiar_inscripciones(
+    payload: schemas.EstadoInscripciones,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Abrir/cerrar inscripciones desde el admin (pestaña Postulados)."""
+    anterior = _inscripciones_abiertas(db)
+    _guardar_flag(db, CLAVE_INSCRIPCIONES, payload.abiertas, user.usuario)
+    db.add(models.Auditoria(
+        entidad="configuracion", entidad_id=0,
+        accion="abrir_inscripciones" if payload.abiertas else "cerrar_inscripciones",
+        campo=CLAVE_INSCRIPCIONES,
+        valor_anterior="abiertas" if anterior else "cerradas",
+        valor_nuevo="abiertas" if payload.abiertas else "cerradas",
+        usuario=user.usuario,
+    ))
+    db.commit()
+    return schemas.EstadoInscripciones(abiertas=payload.abiertas)
+
+
+@app.put("/admin/admision/estado", response_model=schemas.EstadoAdmision)
+def admin_cambiar_admision(
+    payload: schemas.EstadoAdmision,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Abrir/cerrar la etapa de admisión desde el admin (pestaña Inscriptos)."""
+    anterior = _admision_abierta(db)
+    _guardar_flag(db, CLAVE_ADMISION, payload.abierta, user.usuario)
+    db.add(models.Auditoria(
+        entidad="configuracion", entidad_id=0,
+        accion="abrir_admision" if payload.abierta else "cerrar_admision",
+        campo=CLAVE_ADMISION,
+        valor_anterior="abierta" if anterior else "cerrada",
+        valor_nuevo="abierta" if payload.abierta else "cerrada",
+        usuario=user.usuario,
+    ))
+    db.commit()
+    return schemas.EstadoAdmision(abierta=payload.abierta)
+
+
+@app.post("/admin/admitidos/notificar-examen", response_model=schemas.EnvioNotificacionResponse)
+def notificar_examen(
+    payload: schemas.NotificarExamenRequest,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Envía la fecha de examen a todos los admitidos. Requiere admisión cerrada."""
+    if _admision_abierta(db):
+        raise HTTPException(
+            status_code=403,
+            detail="Primero debe cerrarse la etapa de admisión para notificar el examen.",
+        )
+    admitidos = db.execute(
+        select(models.Postulante).where(models.Postulante.admitido == True)  # noqa: E712
+    ).scalars().all()
+    resumen = notif.enviar_mail_examen(db, admitidos, payload.fecha_examen)
+
+    db.add(models.Auditoria(
+        entidad="notificacion", entidad_id=0, accion="notificar_examen",
+        campo="fecha_examen", valor_anterior="", valor_nuevo=payload.fecha_examen,
+        usuario=user.usuario,
+    ))
+    db.commit()
+    return schemas.EnvioNotificacionResponse(
+        clave="mail-examen", total=resumen["total"],
+        enviados=resumen["enviados"], fallidos=resumen["fallidos"],
+    )
+
+
+# --- Cuerpos editables de los mails de admisión y examen (admin) ---
+@app.get("/admin/mails/{clave}")
+def obtener_mail(
+    clave: str,
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if clave not in ("mail-admision", "mail-examen"):
+        raise HTTPException(status_code=404, detail="Mail desconocido")
+    return {"clave": clave, "cuerpo": notif.obtener_cuerpo(db, clave)}
+
+
+@app.put("/admin/mails/{clave}")
+def editar_mail(
+    clave: str,
+    payload: schemas.NotificacionUpdate,
+    user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if clave not in ("mail-admision", "mail-examen"):
+        raise HTTPException(status_code=404, detail="Mail desconocido")
+    notif.guardar_cuerpo(db, clave, payload.cuerpo, user.usuario)
+    db.add(models.Auditoria(
+        entidad="mail", entidad_id=0, accion="editar_mail",
+        campo=clave, valor_anterior="", valor_nuevo="cuerpo actualizado",
+        usuario=user.usuario,
+    ))
+    db.commit()
+    return {"clave": clave, "cuerpo": notif.obtener_cuerpo(db, clave)}
 
 
 # =========================================================================

@@ -122,6 +122,84 @@ export async function validarPostulante(id) {
   return res.json();
 }
 
+// ---- Admin: inscriptos / admitidos / etapas ----
+export async function listarInscriptos(q) {
+  const url = new URL(`${API_URL}/admin/inscriptos`);
+  if (q) url.searchParams.set("q", q);
+  const res = await fetch(url.toString(), { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudieron cargar los inscriptos.");
+  return res.json();
+}
+
+export async function listarAdmitidos(q) {
+  const url = new URL(`${API_URL}/admin/admitidos`);
+  if (q) url.searchParams.set("q", q);
+  const res = await fetch(url.toString(), { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudieron cargar los admitidos.");
+  return res.json();
+}
+
+export async function admitirPostulante(id) {
+  const res = await fetch(`${API_URL}/admin/postulantes/${id}/admitir`, {
+    method: "POST",
+    headers: bearer(),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo admitir.");
+  return res.json();
+}
+
+export async function obtenerEtapas() {
+  const res = await fetch(`${API_URL}/admin/etapas`, { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudo obtener el estado de etapas.");
+  return res.json();
+}
+
+export async function cambiarInscripcionesAdmin(abiertas) {
+  const res = await fetch(`${API_URL}/admin/inscripciones/estado`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ abiertas }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo cambiar el estado de inscripciones.");
+  return res.json();
+}
+
+export async function cambiarAdmisionAdmin(abierta) {
+  const res = await fetch(`${API_URL}/admin/admision/estado`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ abierta }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo cambiar el estado de admisión.");
+  return res.json();
+}
+
+export async function notificarExamen(fecha_examen) {
+  const res = await fetch(`${API_URL}/admin/admitidos/notificar-examen`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ fecha_examen }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo notificar el examen.");
+  return res.json();
+}
+
+export async function obtenerMail(clave) {
+  const res = await fetch(`${API_URL}/admin/mails/${clave}`, { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudo obtener el mail.");
+  return res.json();
+}
+
+export async function editarMail(clave, cuerpo) {
+  const res = await fetch(`${API_URL}/admin/mails/${clave}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...bearer() },
+    body: JSON.stringify({ cuerpo }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo guardar el mail.");
+  return res.json();
+}
+
 // ---- Developer: usuarios ----
 export async function listarUsuarios() {
   const res = await fetch(`${API_URL}/developer/usuarios`, {

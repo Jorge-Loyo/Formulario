@@ -71,6 +71,9 @@ class PostulanteOut(PostulanteBase):
     validado: bool = False
     validado_por: str = ""
     validado_en: datetime | None = None
+    admitido: bool = False
+    admitido_por: str = ""
+    admitido_en: datetime | None = None
 
 
 class InscripcionResponse(BaseModel):
@@ -118,6 +121,14 @@ class UsuarioOut(BaseModel):
 # --- Configuración ---
 class EstadoInscripciones(BaseModel):
     abiertas: bool
+
+
+class EstadoAdmision(BaseModel):
+    abierta: bool
+
+
+class NotificarExamenRequest(BaseModel):
+    fecha_examen: str = Field(min_length=1)
 
 
 # --- Notificaciones ---

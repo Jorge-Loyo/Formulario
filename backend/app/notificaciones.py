@@ -32,6 +32,17 @@ CUERPO_DEFECTO = {
         "Te esperamos para formalizar tu INSCRIPCIÓN con la presentación de la documentación. "
         "El llamado y fecha límite para esto es este viernes 2-10-2026 a las 15 hs.!"
     ),
+    "mail-admision": (
+        "Nos comunicamos para informarte que tu inscripción al concurso de Psicólogo/a de Planta "
+        "fue verificada correctamente y quedás ADMITIDO/A para presentar el examen.\n\n"
+        "Oportunamente se te notificará la fecha, el horario y el lugar del examen por este mismo medio."
+    ),
+    "mail-examen": (
+        "Te informamos que el examen del concurso de Psicólogo/a de Planta se realizará en la "
+        "siguiente fecha:\n\n"
+        "{fecha_examen}\n\n"
+        "Te esperamos. Ante cualquier duda, podés comunicarte con la Dirección."
+    ),
 }
 
 
@@ -164,3 +175,32 @@ def enviar_notificacion(db: Session, clave: str) -> dict:
         "enviados": enviados,
         "fallidos": fallidos,
     }
+
+
+# Asuntos de los correos de admisión y examen.
+ASUNTO_ADMISION = "Admisión al Concurso Público — Psicólogo/a de Planta"
+ASUNTO_EXAMEN = "Fecha de examen — Concurso Público Psicólogo/a de Planta"
+
+
+def enviar_mail_admision(db: Session, postulante) -> bool:
+    """Envía el correo de admisión individual a un postulante."""
+    cuerpo = obtener_cuerpo(db, "mail-admision")
+    nombre_completo = f"{postulante.nombre} {postulante.apellido}".strip()
+    html = _armar_html(cuerpo, nombre_completo)
+    return _enviar_email(postulante.email, ASUNTO_ADMISION, html)
+
+
+def enviar_mail_examen(db: Session, admitidos, fecha_examen: str) -> dict:
+    """Envía el correo con la fecha de examen a todos los admitidos (individual)."""
+    cuerpo = obtener_cuerpo(db, "mail-examen").replace("{fecha_examen}", fecha_examen)
+    enviados = 0
+    fallidos = 0
+    for p in admitidos:
+        nombre_completo = f"{p.nombre} {p.apellido}".strip()
+        html = _armar_html(cuerpo, nombre_completo)
+        ok = _enviar_email(p.email, ASUNTO_EXAMEN, html)
+        if ok:
+            enviados += 1
+        else:
+            fallidos += 1
+    return {"total": len(admitidos), "enviados": enviados, "fallidos": fallidos}
