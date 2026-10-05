@@ -204,6 +204,13 @@ def editar_postulante(
     db: Session = Depends(get_db),
 ):
     """Edita un postulante y registra en auditoría cada campo modificado."""
+    # Solo se puede editar mientras las inscripciones están abiertas.
+    if not _inscripciones_abiertas(db):
+        raise HTTPException(
+            status_code=403,
+            detail="Las inscripciones están cerradas: no se pueden editar los postulantes.",
+        )
+
     postulante = db.get(models.Postulante, postulante_id)
     if postulante is None:
         raise HTTPException(status_code=404, detail="Postulante no encontrado")

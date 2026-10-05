@@ -6,6 +6,7 @@ import {
   obtenerPostulante,
   editarPostulante,
   cerrarSesion,
+  estadoInscripciones,
 } from "@/lib/api";
 import { PROVINCIAS, SEXOS, TIPOS_DOCUMENTO, NACIONALIDADES } from "@/lib/constants";
 
@@ -93,6 +94,7 @@ export default function EditarPostulante() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState(false);
+  const [cerradas, setCerradas] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -106,6 +108,10 @@ export default function EditarPostulante() {
         // Normalizar fecha a YYYY-MM-DD para el input date.
         if (p.fecha_nacimiento) p.fecha_nacimiento = String(p.fecha_nacimiento).slice(0, 10);
         setForm(p);
+        try {
+          const est = await estadoInscripciones();
+          setCerradas(!est.abiertas);
+        } catch (_) { /* no bloquea */ }
       } catch (e) {
         if (e.message === "401") {
           cerrarSesion();
@@ -177,6 +183,12 @@ export default function EditarPostulante() {
 
       {ok && <div className="alert alert-success">Cambios guardados correctamente.</div>}
       {error && <div className="alert alert-danger">{error}</div>}
+      {cerradas && (
+        <div className="alert alert-warning">
+          <i className="bx bx-lock-alt" /> Las inscripciones están <strong>cerradas</strong>:
+          la edición de postulantes está deshabilitada.
+        </div>
+      )}
 
       <form onSubmit={onSubmit}>
         {SECCIONES.map((sec) => (
@@ -214,7 +226,7 @@ export default function EditarPostulante() {
 
         <div className="d-flex justify-content-end gap-2 mb-4 form-actions">
           <Link href="/admin" className="btn btn-outline-secondary">Cancelar</Link>
-          <button type="submit" className="btn btn-primary btn-lg" disabled={guardando}>
+          <button type="submit" className="btn btn-primary btn-lg" disabled={guardando || cerradas}>
             {guardando ? "Guardando…" : "Guardar cambios"}
           </button>
         </div>
