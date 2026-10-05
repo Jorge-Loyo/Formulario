@@ -511,6 +511,7 @@ function Notificaciones({ onExpira }) {
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [enviando, setEnviando] = useState("");
+  const [inscAbiertas, setInscAbiertas] = useState(true);
   const [editando, setEditando] = useState("");   // clave que se está editando
   const [borrador, setBorrador] = useState("");    // texto del cuerpo en edición
   const [guardando, setGuardando] = useState(false);
@@ -519,6 +520,12 @@ function Notificaciones({ onExpira }) {
     setError("");
     try {
       setLista(await listarNotificaciones());
+      try {
+        const est = await obtenerEstadoInscripciones();
+        setInscAbiertas(est.abiertas);
+      } catch (_) {
+        /* si falla, no bloquea la pantalla */
+      }
     } catch (e) {
       if (e.message === "401" || e.message === "403") onExpira();
       else setError("No se pudieron cargar las notificaciones.");
@@ -602,7 +609,11 @@ function Notificaciones({ onExpira }) {
                 )}
                 <button
                   className="btn btn-primary"
-                  disabled={enviando === n.clave || n.destinatarios === 0}
+                  disabled={
+                    enviando === n.clave ||
+                    n.destinatarios === 0 ||
+                    (n.clave === "recordatorio-preinscriptos" && !inscAbiertas)
+                  }
                   onClick={() => enviar(n)}
                 >
                   <i className="bx bx-envelope" />{" "}
@@ -610,6 +621,14 @@ function Notificaciones({ onExpira }) {
                 </button>
               </div>
             </div>
+
+            {n.clave === "recordatorio-preinscriptos" && !inscAbiertas && (
+              <div className="alert alert-warning mt-3 mb-0" role="note">
+                <i className="bx bx-lock-alt" /> Las inscripciones están <strong>cerradas</strong>:
+                el envío de este recordatorio está deshabilitado. Reabrí las inscripciones desde la
+                pestaña Configuración para poder enviarlo.
+              </div>
+            )}
 
             {/* Vista previa / edición del cuerpo */}
             <div className="mt-3" style={{ background: "#f7f9fa", borderRadius: 8, padding: 14 }}>

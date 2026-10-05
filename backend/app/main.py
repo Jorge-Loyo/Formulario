@@ -438,6 +438,13 @@ def enviar_notificacion(
     if clave not in notif.NOTIFICACIONES:
         raise HTTPException(status_code=404, detail="Notificación desconocida")
 
+    # El recordatorio a preinscriptos solo tiene sentido con inscripciones abiertas.
+    if clave == "recordatorio-preinscriptos" and not _inscripciones_abiertas(db):
+        raise HTTPException(
+            status_code=403,
+            detail="Las inscripciones están cerradas: no se puede enviar el recordatorio a preinscriptos.",
+        )
+
     resumen = notif.enviar_notificacion(db, clave)
 
     db.add(models.Auditoria(
