@@ -82,6 +82,72 @@ def estado_inscripciones(db: Session = Depends(get_db)):
     return schemas.EstadoInscripciones(abiertas=_inscripciones_abiertas(db))
 
 
+def _buscar_por_token(db: Session, token: str) -> models.Postulante:
+    p = db.execute(
+        select(models.Postulante).where(models.Postulante.token == token)
+    ).scalar_one_or_none() if token else None
+    if p is None:
+        raise HTTPException(status_code=404, detail="Enlace inválido o vencido.")
+    return p
+
+
+@app.post("/confirmar/{tipo}/{token}", response_model=schemas.ConfirmacionResponse)
+def confirmar(tipo: str, token: str, db: Session = Depends(get_db)):
+    """Público: el postulante confirma recepción (admisión) o asistencia (examen)."""
+    from datetime import datetime as _dt
+    if tipo not in ("recepcion", "asistencia"):
+        raise HTTPException(status_code=400, detail="Tipo de confirmación inválido.")
+    p = _buscar_por_token(db, token)
+
+    if tipo == "recepcion":
+        if not p.recepcion_confirmada:
+            p.recepcion_confirmada = True
+            p.recepcion_confirmada_en = _dt.utcnow()
+            db.add(models.Auditoria(
+                entidad="postulante", entidad_id=p.id, accion="confirmar_recepcion",
+                campo="recepcion_confirmada", valor_anterior="False", valor_nuevo="True",
+                usuario=f"postulante:{p.id}",
+            ))
+            db.commit()
+        msg = "Confirmaste la recepción del correo. ¡Gracias! Seguimos en contacto."
+    else:
+        if not p.asistencia_confirmada:
+            p.asistencia_confirmada = True
+            p.asistencia_confirmada_en = _dt.utcnow()
+            db.add(models.Auditoria(
+                entidad="postulante", entidad_id=p.id, accion="confirmar_asistencia",
+                campo="asistencia_confirmada", valor_anterior="False", valor_nuevo="True",
+                usuario=f"postulante:{p.id}",
+            ))
+            db.commit()
+        msg = "Confirmaste tu asistencia al examen. ¡Te esperamos!"
+
+    return schemas.ConfirmacionResponse(ok=True, tipo=tipo, nombre=f"{p.nombre} {p.apellido}", mensaje=msg)
+
+
+@app.get("/contacto/{token}")
+def datos_contacto(token: str, db: Session = Depends(get_db)):
+    """Público: datos mínimos del postulante para mostrar en el formulario de contacto."""
+    p = _buscar_por_token(db, token)
+    return {"nombre": f"{p.nombre} {p.apellido}", "email": p.email}
+
+
+@app.post("/contacto/{token}")
+def enviar_contacto(token: str, payload: schemas.MensajeContactoCreate, db: Session = Depends(get_db)):
+    """Público: el postulante envía un mensaje al equipo de selección (buzón admin)."""
+    p = _buscar_por_token(db, token)
+    msg = models.MensajeContacto(
+        postulante_id=p.id,
+        nombre=f"{p.nombre} {p.apellido}",
+        email=p.email,
+        asunto=payload.asunto.strip(),
+        mensaje=payload.mensaje.strip(),
+    )
+    db.add(msg)
+    db.commit()
+    return {"ok": True, "mensaje": "Tu mensaje fue enviado al equipo de selección."}
+
+
 @app.post("/auth/login", response_model=schemas.LoginResponse)
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     """Login del panel. Devuelve token + rol."""
@@ -123,6 +189,8 @@ def crear_inscripcion(payload: schemas.PostulanteCreate, db: Session = Depends(g
     if ya_dni is not None:
         raise HTTPException(status_code=409, detail="Ya existe una preinscripción con ese DNI.")
 
+    import secrets as _secrets
+    datos["token"] = _secrets.token_urlsafe(24)
     postulante = models.Postulante(**datos)
     db.add(postulante)
     db.commit()
@@ -364,6 +432,33 @@ def admitir_postulante(
     db.commit()
     db.refresh(postulante)
     return postulante
+
+
+@app.get("/admin/mensajes", response_model=list[schemas.MensajeContactoOut])
+def listar_mensajes(
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Buzón: mensajes de postulantes al equipo de selección (más nuevos primero)."""
+    return db.execute(
+        select(models.MensajeContacto).order_by(models.MensajeContacto.id.desc())
+    ).scalars().all()
+
+
+@app.post("/admin/mensajes/{mensaje_id}/leido", response_model=schemas.MensajeContactoOut)
+def marcar_mensaje_leido(
+    mensaje_id: int,
+    leido: bool = Query(default=True),
+    _user: models.Usuario = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    m = db.get(models.MensajeContacto, mensaje_id)
+    if m is None:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+    m.leido = leido
+    db.commit()
+    db.refresh(m)
+    return m
 
 
 @app.get("/admin/etapas")

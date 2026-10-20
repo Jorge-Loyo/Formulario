@@ -76,6 +76,32 @@ class Postulante(Base):
     # Marca de que ya se le envió el correo de "no admitido" (evita reenvíos).
     no_admitido_notificado: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Token único para identificar al postulante desde los enlaces de los correos.
+    token: Mapped[str] = mapped_column(String(64), default="", index=True)
+
+    # Confirmación de recepción (correo de admisión): el postulante sigue el proceso.
+    recepcion_confirmada: Mapped[bool] = mapped_column(Boolean, default=False)
+    recepcion_confirmada_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Confirmación de asistencia al examen (correo de examen).
+    asistencia_confirmada: Mapped[bool] = mapped_column(Boolean, default=False)
+    asistencia_confirmada_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class MensajeContacto(Base):
+    """Buzón de mensajes que los postulantes envían al equipo de selección."""
+    __tablename__ = "mensajes_contacto"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    postulante_id: Mapped[int] = mapped_column(Integer, index=True)
+    # Datos del postulante al momento del mensaje (para mostrarlos sin join).
+    nombre: Mapped[str] = mapped_column(String(200), default="")
+    email: Mapped[str] = mapped_column(String(200), default="")
+    asunto: Mapped[str] = mapped_column(String(200), default="")
+    mensaje: Mapped[str] = mapped_column(Text, default="")
+    leido: Mapped[bool] = mapped_column(Boolean, default=False)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class Usuario(Base):
     """Usuarios del panel (roles: 'admin' o 'developer')."""

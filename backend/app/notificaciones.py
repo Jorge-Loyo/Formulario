@@ -96,8 +96,8 @@ def guardar_cuerpo(db: Session, clave: str, cuerpo: str, usuario: str) -> None:
     db.commit()
 
 
-def _armar_html(cuerpo: str, nombre_completo: str) -> str:
-    """Compone el HTML final: saludo fijo + cuerpo editable + firma fija."""
+def _armar_html(cuerpo: str, nombre_completo: str, acciones_html: str = "") -> str:
+    """Compone el HTML final: saludo fijo + cuerpo editable + acciones + firma fija."""
     # Cada línea/párrafo del cuerpo se separa por doble salto de línea.
     parrafos = "".join(
         f"<p>{p.strip()}</p>" for p in cuerpo.split("\n\n") if p.strip()
@@ -106,6 +106,7 @@ def _armar_html(cuerpo: str, nombre_completo: str) -> str:
 <div style="font-family:Arial,sans-serif;font-size:15px;color:#333;line-height:1.6;">
   <p>Hola {nombre_completo}!</p>
   {parrafos}
+  {acciones_html}
   <p>Saludos,</p>
   <p style="margin:0;">-</p>
   <p style="margin:0;">Dirección General de Administración y Desarrollo de Recursos Humanos</p>
@@ -113,6 +114,30 @@ def _armar_html(cuerpo: str, nombre_completo: str) -> str:
   <p style="margin:0;">GCBA</p>
 </div>
 """
+
+
+def _boton(url: str, texto: str, color: str = "#153244") -> str:
+    return (
+        f'<a href="{url}" style="display:inline-block;background:{color};color:#fff;'
+        f'text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:bold;'
+        f'margin:4px 6px 4px 0;">{texto}</a>'
+    )
+
+
+def _acciones_mail(token: str, incluir_confirmar: str = "") -> str:
+    """Bloque de botones para los correos. incluir_confirmar: 'recepcion' | 'asistencia' | ''."""
+    base = settings.url_frontend
+    botones = ""
+    if incluir_confirmar == "recepcion":
+        botones += _boton(f"{base}/confirmar?tipo=recepcion&token={token}", "Confirmar recepción", "#2e7d32")
+    elif incluir_confirmar == "asistencia":
+        botones += _boton(f"{base}/confirmar?tipo=asistencia&token={token}", "Confirmar asistencia", "#2e7d32")
+    botones += _boton(f"{base}/contacto?token={token}", "Enviar un mensaje al equipo de selección")
+    return (
+        '<div style="margin:18px 0;padding-top:12px;border-top:1px solid #e2e7ec;">'
+        + botones +
+        '</div>'
+    )
 
 
 def _destinatarios(db: Session, grupo: str) -> list[Postulante]:
@@ -188,10 +213,11 @@ ASUNTO_EXAMEN = "Fecha de examen — Concurso Público Psicólogo/a de Planta"
 
 
 def enviar_mail_admision(db: Session, postulante) -> bool:
-    """Envía el correo de admisión individual a un postulante."""
+    """Envía el correo de admisión individual a un postulante (con confirmar recepción)."""
     cuerpo = obtener_cuerpo(db, "mail-admision")
     nombre_completo = f"{postulante.nombre} {postulante.apellido}".strip()
-    html = _armar_html(cuerpo, nombre_completo)
+    acciones = _acciones_mail(postulante.token, incluir_confirmar="recepcion")
+    html = _armar_html(cuerpo, nombre_completo, acciones)
     return _enviar_email(postulante.email, ASUNTO_ADMISION, html)
 
 
@@ -202,7 +228,8 @@ def enviar_mail_examen(db: Session, admitidos, fecha_examen: str) -> dict:
     fallidos = 0
     for p in admitidos:
         nombre_completo = f"{p.nombre} {p.apellido}".strip()
-        html = _armar_html(cuerpo, nombre_completo)
+        acciones = _acciones_mail(p.token, incluir_confirmar="asistencia")
+        html = _armar_html(cuerpo, nombre_completo, acciones)
         ok = _enviar_email(p.email, ASUNTO_EXAMEN, html)
         if ok:
             enviados += 1

@@ -57,6 +57,30 @@ export async function estadoInscripciones() {
   return res.json(); // { abiertas: boolean }
 }
 
+export async function confirmarPostulante(tipo, token) {
+  const res = await fetch(`${API_URL}/confirmar/${tipo}/${token}`, {
+    method: "POST",
+  });
+  if (!res.ok) await manejarError(res, "No se pudo confirmar.");
+  return res.json();
+}
+
+export async function datosContacto(token) {
+  const res = await fetch(`${API_URL}/contacto/${token}`);
+  if (!res.ok) await manejarError(res, "Enlace inválido.");
+  return res.json();
+}
+
+export async function enviarContacto(token, asunto, mensaje) {
+  const res = await fetch(`${API_URL}/contacto/${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ asunto, mensaje }),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo enviar el mensaje.");
+  return res.json();
+}
+
 export async function crearInscripcion(datos) {
   const res = await fetch(`${API_URL}/inscripciones`, {
     method: "POST",
@@ -150,7 +174,8 @@ export async function admitirPostulante(id) {
 
 export async function obtenerEtapas() {
   const res = await fetch(`${API_URL}/admin/etapas`, { headers: bearer() });
-  if (!res.ok) await manejarError(res, "No se pudo obtener el estado de etapas.");
+  if (!res.ok)
+    await manejarError(res, "No se pudo obtener el estado de etapas.");
   return res.json();
 }
 
@@ -160,7 +185,8 @@ export async function cambiarInscripcionesAdmin(abiertas) {
     headers: { "Content-Type": "application/json", ...bearer() },
     body: JSON.stringify({ abiertas }),
   });
-  if (!res.ok) await manejarError(res, "No se pudo cambiar el estado de inscripciones.");
+  if (!res.ok)
+    await manejarError(res, "No se pudo cambiar el estado de inscripciones.");
   return res.json();
 }
 
@@ -170,7 +196,8 @@ export async function cambiarAdmisionAdmin(abierta) {
     headers: { "Content-Type": "application/json", ...bearer() },
     body: JSON.stringify({ abierta }),
   });
-  if (!res.ok) await manejarError(res, "No se pudo cambiar el estado de admisión.");
+  if (!res.ok)
+    await manejarError(res, "No se pudo cambiar el estado de admisión.");
   return res.json();
 }
 
@@ -184,8 +211,25 @@ export async function notificarExamen(fecha_examen) {
   return res.json();
 }
 
+export async function listarMensajes() {
+  const res = await fetch(`${API_URL}/admin/mensajes`, { headers: bearer() });
+  if (!res.ok) await manejarError(res, "No se pudieron cargar los mensajes.");
+  return res.json();
+}
+
+export async function marcarMensajeLeido(id, leido = true) {
+  const res = await fetch(`${API_URL}/admin/mensajes/${id}/leido?leido=${leido}`, {
+    method: "POST",
+    headers: bearer(),
+  });
+  if (!res.ok) await manejarError(res, "No se pudo actualizar el mensaje.");
+  return res.json();
+}
+
 export async function obtenerMail(clave) {
-  const res = await fetch(`${API_URL}/admin/mails/${clave}`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/admin/mails/${clave}`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "No se pudo obtener el mail.");
   return res.json();
 }
@@ -248,7 +292,9 @@ export async function listarValidadas(q) {
 }
 
 export async function descargarValidadasExcel() {
-  const res = await fetch(`${API_URL}/developer/validadas/excel`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/developer/validadas/excel`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "No se pudo generar el Excel.");
   return res.blob();
 }
@@ -286,7 +332,9 @@ export async function editarNotificacion(clave, cuerpo) {
 
 // ---- Developer: estado de inscripciones ----
 export async function obtenerEstadoInscripciones() {
-  const res = await fetch(`${API_URL}/developer/inscripciones/estado`, { headers: bearer() });
+  const res = await fetch(`${API_URL}/developer/inscripciones/estado`, {
+    headers: bearer(),
+  });
   if (!res.ok) await manejarError(res, "No se pudo obtener el estado.");
   return res.json();
 }

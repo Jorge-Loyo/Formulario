@@ -28,9 +28,20 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    # URL pública del frontend para armar enlaces en los correos.
+    # Si no se define, usa el primer origen permitido.
+    frontend_url: str = ""
+
     @property
     def allowed_origins(self) -> list[str]:
         return [o.strip() for o in self.frontend_origin.split(",") if o.strip()]
+
+    @property
+    def url_frontend(self) -> str:
+        if self.frontend_url.strip():
+            return self.frontend_url.strip().rstrip("/")
+        origenes = self.allowed_origins
+        return (origenes[0] if origenes else "http://localhost:3000").rstrip("/")
 
 
 settings = Settings()

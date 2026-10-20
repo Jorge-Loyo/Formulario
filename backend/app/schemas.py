@@ -74,6 +74,8 @@ class PostulanteOut(PostulanteBase):
     admitido: bool = False
     admitido_por: str = ""
     admitido_en: datetime | None = None
+    recepcion_confirmada: bool = False
+    asistencia_confirmada: bool = False
 
 
 class InscripcionResponse(BaseModel):
@@ -115,6 +117,32 @@ class UsuarioOut(BaseModel):
     usuario: str
     rol: str
     activo: bool
+    creado_en: datetime
+
+
+# --- Confirmaciones y mensajes (postulante) ---
+class ConfirmacionResponse(BaseModel):
+    ok: bool
+    tipo: str
+    nombre: str = ""
+    mensaje: str = ""
+
+
+class MensajeContactoCreate(BaseModel):
+    asunto: str = Field(min_length=1, max_length=200)
+    mensaje: str = Field(min_length=1, max_length=4000)
+
+
+class MensajeContactoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    postulante_id: int
+    nombre: str
+    email: str
+    asunto: str
+    mensaje: str
+    leido: bool
     creado_en: datetime
 
 

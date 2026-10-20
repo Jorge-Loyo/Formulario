@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import {
   login as apiLogin,
@@ -18,6 +18,8 @@ import {
   notificarExamen,
   obtenerMail,
   editarMail,
+  listarMensajes,
+  marcarMensajeLeido,
 } from "@/lib/api";
 import GraficoPostulaciones from "@/components/GraficoPostulaciones";
 
@@ -176,6 +178,14 @@ export default function Admin() {
             Admitidos
           </button>
         </li>
+        <li className="nav-item">
+          <button
+            className={`nav-link ${tab === "mensajes" ? "active" : ""}`}
+            onClick={() => setTab("mensajes")}
+          >
+            Mensajes
+          </button>
+        </li>
       </ul>
 
       {tab === "postulados" && (
@@ -199,6 +209,7 @@ export default function Admin() {
           onExpira={onExpira}
         />
       )}
+      {tab === "mensajes" && <Mensajes onExpira={onExpira} />}
     </div>
   );
 }
@@ -1151,6 +1162,120 @@ function EditorMail({ clave, titulo, ayuda, onExpira }) {
         )}
       </div>
     </div>
+  );
+}
+
+// =====================================================================
+// Pestaña MENSAJES (buzón del equipo de selección)
+// =====================================================================
+function Mensajes({ onExpira }) {
+  const [lista, setLista] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+  const [abierto, setAbierto] = useState(0);
+
+  async function cargar() {
+    setCargando(true);
+    setError("");
+    try {
+      setLista(await listarMensajes());
+    } catch (e) {
+      if (e.message === "401") onExpira();
+      else setError("No se pudieron cargar los mensajes.");
+    } finally {
+      setCargando(false);
+    }
+  }
+  useEffect(() => { cargar(); /* eslint-disable-next-line */ }, []);
+
+  async function toggleLeido(m) {
+    try {
+      const act = await marcarMensajeLeido(m.id, !m.leido);
+      setLista((l) => l.map((x) => (x.id === m.id ? { ...x, ...act } : x)));
+    } catch (e) {
+      if (e.message === "401") onExpira();
+    }
+  }
+
+  function abrir(m) {
+    setAbierto((prev) => (prev === m.id ? 0 : m.id));
+    if (!m.leido) toggleLeido(m);
+  }
+
+  const sinLeer = lista.filter((m) => !m.leido).length;
+
+  return (
+    <section className="card-form">
+      <div className="d-flex justify-content-between align-items-center flex-wrap mb-2" style={{ gap: 10 }}>
+        <h2 className="section-title" style={{ marginBottom: 0 }}>
+          Mensajes del equipo de selección
+          {sinLeer > 0 && (
+            <span className="badge ms-2" style={{ background: "#c1121f", color: "#fff" }}>{sinLeer} sin leer</span>
+          )}
+        </h2>
+        <button className="btn btn-outline-secondary btn-sm" onClick={cargar}>
+          <i className="bx bx-refresh" /> Actualizar
+        </button>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="table-responsive">
+        <table className="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th style={{ width: 40 }}></th>
+              <th>Fecha</th><th>De</th><th>Email</th><th>Asunto</th>
+              <th className="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cargando ? (
+              <tr><td colSpan={6} className="text-center py-4">Cargando...</td></tr>
+            ) : lista.length === 0 ? (
+              <tr><td colSpan={6} className="text-center py-4 text-muted">No hay mensajes.</td></tr>
+            ) : (
+              lista.map((m) => (
+                <Fragment key={m.id}>
+                  <tr style={{ fontWeight: m.leido ? 400 : 700, cursor: "pointer" }} onClick={() => abrir(m)}>
+                    <td>{m.leido
+                      ? <i className="bx bx-envelope-open" style={{ color: "#8a96a0" }} />
+                      : <i className="bx bxs-envelope" style={{ color: "#c1121f" }} />}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{new Date(m.creado_en).toLocaleString("es-AR")}</td>
+                    <td>{m.nombre}</td>
+                    <td style={{ wordBreak: "break-all" }}>{m.email}</td>
+                    <td>{m.asunto}</td>
+                    <td className="text-end">
+                      <button className="btn btn-sm btn-outline-secondary"
+                        onClick={(e) => { e.stopPropagation(); toggleLeido(m); }}>
+                        {m.leido ? "Marcar no leído" : "Marcar leído"}
+                      </button>
+                    </td>
+                  </tr>
+                  {abierto === m.id && (
+                    <tr>
+                      <td></td>
+                      <td colSpan={5}>
+                        <div style={{ background: "#f7f9fa", borderRadius: 8, padding: 14, whiteSpace: "pre-line" }}>
+                          {m.mensaje}
+                          <div className="mt-2">
+                            <a href={`mailto:${m.email}?subject=Re: ${encodeURIComponent(m.asunto)}`}
+                              className="btn btn-sm btn-outline-primary">
+                              <i className="bx bx-reply" /> Responder por email
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="form-hint">Total: {lista.length} mensaje(s).</p>
+    </section>
   );
 }
 
