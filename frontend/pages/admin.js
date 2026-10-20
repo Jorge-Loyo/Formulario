@@ -974,19 +974,21 @@ function Admitidos({ etapas, onExpira }) {
                 <th>Email</th>
                 <th>Admitido por</th>
                 <th>Fecha de admisión</th>
+                <th>Recepción</th>
+                <th>Asistencia</th>
                 <th className="text-end">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {cargando ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-4">
+                  <td colSpan={9} className="text-center py-4">
                     Cargando...
                   </td>
                 </tr>
               ) : lista.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-4 text-muted">
+                  <td colSpan={9} className="text-center py-4 text-muted">
                     No hay admitidos.
                   </td>
                 </tr>
@@ -1004,6 +1006,28 @@ function Admitidos({ etapas, onExpira }) {
                       {p.admitido_en
                         ? new Date(p.admitido_en).toLocaleString("es-AR")
                         : "-"}
+                    </td>
+                    <td>
+                      {p.recepcion_confirmada ? (
+                        <span className="badge" style={{ background: "#2e7d32", color: "#fff" }}>
+                          <i className="bx bx-check" /> Confirmada
+                        </span>
+                      ) : (
+                        <span className="badge" style={{ background: "#e2e7ec", color: "#5a6672" }}>
+                          Pendiente
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {p.asistencia_confirmada ? (
+                        <span className="badge" style={{ background: "#2e7d32", color: "#fff" }}>
+                          <i className="bx bx-check" /> Confirmada
+                        </span>
+                      ) : (
+                        <span className="badge" style={{ background: "#e2e7ec", color: "#5a6672" }}>
+                          Pendiente
+                        </span>
+                      )}
                     </td>
                     <td className="table-actions">
                       <div
