@@ -434,6 +434,70 @@ def admitir_postulante(
     return postulante
 
 
+@app.post("/developer/prueba-correos")
+def prueba_correos(
+    email: str = Query(..., description="Email de destino para la prueba"),
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Crea un postulante de PRUEBA (marcado, aislado) y le envía los correos de
+    admisión y examen con tokens válidos, para poder probar los botones.
+    Devuelve el id para borrarlo luego con /developer/prueba-correos/limpiar.
+    No afecta a los postulantes reales.
+    """
+    import secrets as _secrets
+    from datetime import date as _date
+
+    token = "PRUEBA-" + _secrets.token_urlsafe(20)
+    p = models.Postulante(
+        apellido="INTERNA", nombre="PRUEBA", dni=f"PRUEBA-{_secrets.token_hex(4)}",
+        cuil="PRUEBA", sexo="M", fecha_nacimiento=_date(1990, 1, 1), nacionalidad="Argentina",
+        telefono_particular="", telefono_celular="0", telefono_alternativo="", email=email,
+        real_calle="Prueba", real_numero="0", real_piso_depto="", real_codigo_postal="0",
+        real_localidad="CABA", real_provincia="Buenos Aires",
+        const_calle="Prueba", const_numero="0", const_piso_depto="", const_codigo_postal="0",
+        const_localidad="CABA", const_provincia="Ciudad Autonoma de Buenos Aires",
+        titulo="Licenciado en Psicologia", universidad="Prueba", matricula_profesional="0",
+        expedida_por="Prueba", especialidad="", cargo_establecimiento="", cargo_cargo="",
+        apoderado_nombre="", apoderado_tipo_documento="", apoderado_documento="", apoderado_numero_acta="",
+        validado=True, admitido=True, token=token,
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+
+    ok_adm = notif.enviar_mail_admision(db, p)
+    res_ex = notif.enviar_mail_examen(db, [p], "Viernes 24/10/2026 a las 10:00 hs, en Rivadavia 524, CABA (PRUEBA)")
+    return {
+        "email": email,
+        "postulante_prueba_id": p.id,
+        "admision_enviado": ok_adm,
+        "examen": res_ex,
+    }
+
+
+@app.post("/developer/prueba-correos/limpiar")
+def prueba_correos_limpiar(
+    _dev: models.Usuario = Depends(require_developer),
+    db: Session = Depends(get_db),
+):
+    """Borra todos los postulantes de PRUEBA (dni que empieza con 'PRUEBA-') y sus mensajes."""
+    pruebas = db.execute(
+        select(models.Postulante).where(models.Postulante.dni.like("PRUEBA-%"))
+    ).scalars().all()
+    ids = [p.id for p in pruebas]
+    for p in pruebas:
+        db.delete(p)
+    # Borrar mensajes de contacto asociados a esos postulantes de prueba.
+    if ids:
+        for m in db.execute(
+            select(models.MensajeContacto).where(models.MensajeContacto.postulante_id.in_(ids))
+        ).scalars().all():
+            db.delete(m)
+    db.commit()
+    return {"borrados": len(ids), "ids": ids}
+
+
 @app.get("/admin/mensajes", response_model=list[schemas.MensajeContactoOut])
 def listar_mensajes(
     _user: models.Usuario = Depends(require_admin),
